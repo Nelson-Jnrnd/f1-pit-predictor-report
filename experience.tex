@@ -1,0 +1,67 @@
+La première approche est celle de l'imitation learning dans laquelle on utilise les données historiques comme target de notre modèle.
+Ce
+
+La première modélisation explorée est celle d'une classification binaire
+où le modèle considère les informations d'un seul tour de course en entrée et détermine en sortie si la voiture s'arrête ou non à la fin de celui-ci.
+
+Au moment du rendu intermédiaire, un simple RandomForest, servant de baseline a été entrainé.
+
+Le modèle est entrainé sur les années 2019 à 2022, en réservant l'année 2023 comme set de validation afin d'évaluer la capacité du modèle à généraliser
+sur des données qui ne sont pas inclus dans le set d'entrainement.
+Étant donné la quantité importante de données, nous avons choisi d'effectuer une division du dataset en un jeu d'entraînement et un jeu de test avec un ratio de 0,2.
+
+Les étapes de preprocessing ont ensuite été appliquée sur les sets de données individuellement afin d'éviter le data leakage.
+Ce phénomène se produit lorsqu'une information provenant du set de test ou de validation est incorporée dans le processus d'entraînement du modèle,
+ce qui fausse les résultats de l'évaluation et conduit à une estimation optimiste des performances du modèle.
+
+Les paramètres du modèle entrainée sont en table \ref{rf_params}.
+
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rf_params}Paramètres du premier modèle}
+        \begin{tabular}{r|l}
+            hyperparamètre    & valeur             \\ \hline
+            class weight      & balanced subsample \\
+            n estimator       & 1000               \\
+            max depth         & 10                 \\
+            min samples split & 2                  \\
+            min samples leaf  & 1                  \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+Les métriques des résultats sont observables en table \ref{rf_results} et la matrice de confusion en table \ref{rf_matrix}.
+En raison de la nature déséquilibrée de notre classification, on ne peut pas se fier à la métrique d'accuracy.
+
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rf_matrix}Matrice de confusion de l'entrainement du premier modèle, les colonnes représentent les prédictions et les lignes le ground truth.}
+        \begin{tabular}{r|cc}
+                    & Négatif & Positif \\ \hline
+            Négatif & 13802   & 2005    \\
+            Positif & 148     & 344     \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rf_results}Matrice de confusion de l'entrainement du premier modèle, les colonnes représentent les prédictions et les lignes le ground truth.}
+        \begin{tabular}{r|ccc}
+            Classe  & Precision & Recall & F1Score \\ \hline
+            Négatif & 0.99      & 0.87   & 0.93    \\
+            Positif & 0.15      & 0.7    & 0.24    \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+
+On remarque dans les résultats que le modèle à de la peine à classifier les cas positifs avec beaucoup de faux-positifs.
+Les résultats sont étudiés plus en détails sur une course du set de validation 2023 en figure \ref{rf_validation}.
+On peut observer un comportement similaire aux résultats obtenus dans l'étude “Virtual Strategy Engineer: Using Artificial Neural Networks for Making Race Strategy Decisions in Circuit Motorsport”. \cite{app10217805}
+Le modèle ne semble pas pouvoir augmenter la probabilité d'arrêt au stand assez rapidement pour éviter les faux positifs.
+Les arrêts sont recommandés 4 à 5 tours trop tôt ou alors pas du tout comme dans la course en figure \ref{rf_validation2},
+la probabilité d'un arrêt chute suite à un arrêt même si le modèle ne l'as pas prédit.
+
+\fig[H, width=0.9\textwidth]{\label{rf_validation}Progression des probabilités d'arrêt au stand pour le Grand Prix de Bahreïn 2023 de Max Verstappen}{predictions_by_lapNumber_Driver_1.svg}
+\fig[H, width=0.9\textwidth]{\label{rf_validation2}Progression des probabilités d'arrêt au stand pour le Grand Prix de Bahreïn 2023 de Pierre Gasly}{predictions_by_lapNumber_Driver_10.svg}

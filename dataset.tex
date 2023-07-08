@@ -1,0 +1,260 @@
+Cette section est consacrée à l'étude des données disponibles sur les courses de Formule 1 et à la création d'un dataset adapté
+à l'entrainement d'un modèle de Machine Learning.
+
+\section{Données existantes}
+
+Il existe 2 principales sources de données disponibles sur les courses de Formule 1.
+La première est le dataset Ergast, qui est un projet open source qui répertorie des données sur les résultats des Grand Prix.
+La seconde est la Formule 1 elle-même qui diffuse publiquement une certaine partie des données, dites "Live Timing",
+qui correspondent aux données des capteurs des voitures.
+Les données ont donc plusieurs temporalités :
+\begin{itemize}
+    \item les informations sur un weekend de courses (circuit, saison, etc.)
+    \item les données pour un tour de course (temps au tour, gomme de pneu, etc.)
+    \item les données des capteurs (vitesse, distance avec les autres voitures, etc.)
+\end{itemize}
+
+FastF1 est une librairie Python qui permet facilement d'accéder aux données de l'API Ergast et aux données officielle de la Formule 1 depuis 2018.
+\fig[H, width=0.9\textwidth]{Diagramme en couches des données}{data_layers.svg}
+
+La quantité entre les catégories de données que nous avons surnommés respectivement données de courses, données de tour et données de télémétrie
+sont très différentes.
+
+\fig[H, width=0.9\textwidth]{Nombre de données par courses, pour chaque catégorie de données}{nbSamples.svg}
+
+\subsection{Données de courses}
+Ces données donnent des informations sur le weekend de course et ne changent pas au cours de ce dernier.
+La majorité des features de cette catégorie sont connues pendant la course et donc au moment de l'inférence.
+
+\begin{table}[h]
+    \begin{center}
+        \caption{Liste d'exemple de features 'données de courses'}
+        \begin{tabular}{l|l}
+            Nom de la feature & Exemple de valeur \\ \hline
+            season            & 2021              \\
+            circuit           & Monaco            \\
+            number of laps    & 78
+        \end{tabular}
+    \end{center}
+\end{table}
+
+Les autres features sont liées au résultat de la course et ne serais pas disponibles pendant la prédiction.
+Mais elles pourraient être utilisées pendant l'entrainement pour par exemple pondérer plus fortement
+les stratégies de voitures qui ont de meilleurs résultats.
+\subsection{Données de tour}
+L'API de la Formule 1 permet d'écouter un flux de données dit "Live Timing".
+Ce flux contient différents canaux :
+\begin{table}[H]
+    \begin{center}
+        \caption{Liste des différents canaux fournis dans le flux de données "Live Timing"}
+        \begin{tabular}{l|l}
+            Canal           & Description                                            \\ \hline
+            LapNumber       & Numéro du tour en cours                                \\
+            Driver          & Numéro identifiant du pilote                           \\
+            LapTime         & Temps du tour précédent                                \\
+            Stint           & Nombre de relais effectués                             \\
+            TotalLaps       & Nombre total de tours effectués avec ce set de pneus   \\
+            Compound        & Type de pneus utilisé                                  \\
+            New             & Indique si le pneu a été neuf au moment de son montage \\
+            TyresNotChanged & Signale les arrêts aux stands sans changement de pneus \\
+            Time            & Temps écoulé depuis le début de la session             \\
+            LapFlags        & Drapeaux survenus pendant le tour
+        \end{tabular}
+    \end{center}
+\end{table}
+
+À chaque instant, seulement certains canaux sont actifs. La librairie FastF1 effectue le travail de les agréger sur le parcours d'un tour. Et permet de récupérer ses informations pour tous les tours effectués.
+Il serait donc possible de s'abonner à ce flux de donner et d'envoyer directement les informations
+émises en entrée du système de prédiction. Un exemple du flux est présenté dans la Table \ref{Live Timing} en annexe.
+
+\subsection{Données de télémétrie}
+L'API de la Formule 1 émet également un flux de données pour les données des capteurs des voitures et des capteurs météorologiques.
+Les données des capteurs sont envoyés a travers 2 différents flux "Car data" et "Position data" avec des mesures qui sont envoyées environ toutes les 240 millisecondes.
+\begin{table}[H]
+    \begin{center}
+        \caption{Liste des différents canaux fournis dans le flux de données "Car data"}
+        \begin{tabular}{l|l}
+            Canal    & Description                                                            \\ \hline
+            Time     & Temps écoulé depuis le début de la session                             \\
+            Date     & Date exacte de la prise de l'échantillon                               \\
+            Speed    & Vitesse de la voiture en Km/h                                          \\
+            RPM      & Régime moteur                                                          \\
+            Gear     & Rapport de vitesse                                                     \\
+            Throttle & Pression sur l'accélérateur, exprimé en pourcentage de 0 à 100         \\
+            Brake    & Indicateur de freinage, Vrai si les freins sont enclenchés, faux sinon \\
+            DRS      & Système de réduction de traînée (Drag Reduction System)                \\
+                     & Il comporte plusieurs valeurs possibles codifiées :                    \\
+                     & 0-1 = désactivé, 8 = éligible, 10-14 = activé
+        \end{tabular}
+    \end{center}
+\end{table}
+
+\begin{table}[H]
+    \begin{center}
+        \caption{Liste des différents canaux fournis dans le flux de données "Position data"}
+        \begin{tabular}{l|l}
+            Canal   & Description                                                \\ \hline
+            Time    & Temps écoulé depuis le début de la session                 \\
+            Date    & Date exacte de la prise de l'échantillon                   \\
+            Status  & 'OnTrack' ou 'OffTrack' (en dehors des limites du circuit) \\
+            X, Y, Z & Coordonnées de position relative en mètre
+        \end{tabular}
+    \end{center}
+\end{table}
+
+Pour chaque tour de course d'une voiture, il y a alors entre ~300 et 1'000 échantillons de données télémétriques en fonction de la longueur du circuit.
+Ces données offrent un aperçu de la performance de la voiture et permettrait d'estimer la performance du pneumatique.
+Un exemple de données télémétriques échantillonnées sur un tour de course est donné en figure \ref{telemetry_example}.
+\fig[H, width=0.9\textwidth]{\label{telemetry_example} Exemple de données de télémétrie d'un tour de Carlos Sainz au Grand Prix de Grande-Bretagne 2021}{telemetry_example.svg}
+
+\section{Création d'un dataset}
+
+La première expérience est de créer un classificateur binaire (entrée au stand ou pas) qui prends en entrée les informations d'un seul tour de course.
+Dans ce contexte, nous avons décidé de discrétiser chaque course en tour pour chaque voiture.
+Une course de 50 tours engendre alors 50 x 20 entrées dans la base de données si les 20 voitures terminent la course.
+
+Le sous-ensemble des champs considérés est présentée en table \ref{dataset_features}. Ces variables retenues résultent d'une phase de sélection dans laquelle
+les variables redondantes ou estimées comme non prédictive ont été éliminées.
+
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{dataset_features}Champs retenus dans le dataset}
+        \begin{tabular}{ll}
+            Champ                   & Description                                      \\ \hline
+            LapNumber               & Numéro du tour en cours                          \\
+            LapTime                 & Temps du tour en secondes                        \\
+            DriverNumber            & Numéro unique du pilote                          \\
+            Team                    & Nom de l'écurie                                  \\
+            Compound                & Composé de pneu utilisé (soft, medium ou hard)   \\
+            TyreLife                & Âge des pneus en nombre de tours                 \\
+            TotalLaps               & Nombre de tours totaux de la course              \\
+            Track                   & Nom du circuit                                   \\
+            TrackStatus             & Drapeaux de course apparaissant pendant le tour  \\
+            Stint                   & Nombre de relais effectués                       \\
+            DistanceToDriverAhead   & Distance en mètre avec la voiture devant         \\
+            DriverAhead             & Numéro unique du pilote devant                   \\
+            NumberOfPitStops        & Nombre d'arrêts au stand déjà éffectuées         \\
+            Position                & Position dans la course                          \\
+            GapToLeader             & Distance en secondes avec le pilote en tête      \\
+            IntervalToPositionAhead & Distance en secondes avec le pilote devant       \\
+            LapsToLeader            & Nombre de tours de retard avec le pilote en tête \\
+            PitStatus               & In Lap / Out Lap / No Pit                        \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+Pour les données télémétriques qui sont échantillonnées plus d'une fois par tour,
+on prend la dernière mesure au moment où la voiture franchit la ligne d'arrivée.
+Les tours avec des informations manquantes ont été exclus.
+Les saisons 2019 à 2022 compris ont étés considérés, l'année 2023 étant en cours au moment de la rédaction de ce projet
+est réservée comme données de test. La base de données contient 87'845 tours de 80 courses et est disponible ici. % TODO link
+
+\section{Exploration des données}
+Dans ce chapitre, nous détaillons les modifications apportées aux données pour les préparer à l'entrainement du modèle.
+Ainsi que les informations que nous avons pu tirer de l'étude du set de données.
+
+\subsection{Preprocessing}
+La feature TrackStatus communiquée dans l'api officielle contient un ensemble d'entier concaténé dans une chaine de caractères où chaque entier représente un drapeau de course agité au cours du tour.
+Les différents status et leur entier correspondant sont détaillé dans la table \ref{track_status_table}.
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{track_status_table}Correspondance des status de piste}
+        \begin{tabular}{r|l|l}
+            Entier & Correspondance       & Description                                    \\ \hline
+            1      & Drapeau vert         & La piste est libre                             \\
+            2      & Drapeau jaune        & La piste est partiellement bloquée, la course  \\
+                   &                      & continue, mais les dépassements sont interdit  \\
+                   &                      & dans un ou plusieurs secteurs                  \\
+            4      & Voiture de sécurité  & La course est neutralisée, les voitures ne     \\
+                   &                      & peuvent pas dépasser, réduisent leur vitesse   \\
+                   &                      & et font la queue derrière la voiture de        \\
+                   &                      & sécurité                                       \\
+            5      & Drapeau rouge        & La course est interrompue, toutes les voitures \\
+                   &                      & rentrent au stand                              \\
+            6      & Voiture de sécurité  & La course est neutralisée, les voitures ne     \\
+                   & virtuelle            & peuvent pas dépasser et réduisent leur         \\
+                   &                      & vitesse                                        \\
+            7      & Fin de la voiture de & La voiture de sécurité rentre à la fin de ce   \\
+                   & sécurité             & tour
+        \end{tabular}
+    \end{center}
+\end{table}
+
+Pour l'utiliser, elle a été transformée en 6 features binaires où chaque feature représente la présence d'un statut.
+Les distributions de la variable avant et après la transformation est observable en figure \ref{track_status_plot}.
+\fig[H, width=0.9\textwidth]{\label{track_status_plot}Distribution de la feature TrackStatus avant et après la discrétisation}{track_status_binarized.svg}
+
+6'455 observations avait des valeurs manquantes pour les colonnes DriverAhead et DistanceToDriverAhead. En étudiant la distribution des numéros de tour de ces observations,
+présentés en figure \ref{hist_missing_driver_ahead}, on remarque que la plupart des tours sont les premiers de la course,
+le reste de la distribution est assez uniforme avec une légère diminution de la fréquence après 55 tours, ce qui est logique, car la majorité des courses durent entre 50 et 60 tours.
+Les premiers tours de courses seront supprimés du dataset.
+
+\fig[H, width=0.9\textwidth]{\label{hist_missing_driver_ahead}Distribution de la feature LapNumber pour les tours avec des valeurs manquantes}{lap_number_without_driver_ahead.svg}
+
+En figure \ref{gap_leader_missing}, on voit que beaucoup d'échantillons n'ont pas de valeurs pour la colonne GapToLeader et en observants la figure \ref{gap_leader_laps}, on remarque que ce sont tous des voitures qui ont au moins un tour de retard.
+Il est difficile et peut intéressant de déterminer l'écart entre une voiture retardataire et le leader, les valeurs manquantes ont donc été remplacées par -1.
+
+\fig[H, width=0.9\textwidth]{\label{gap_leader_missing}Valeurs manquantes de chaque colonne, les observations d'IntervalToPositionAhead nulles sont celles de voiture avec un tour de retard sur tout le peloton, celles avec des valeurs manquantes de DistanceToDriverAhead et DriverAhead sont ceux du pilote en tête.}{null_values_per_column_after_cleaning.svg}
+
+\fig[H, width=0.9\textwidth]{\label{gap_leader_laps}Histogramme de la caractéristique LapsToLeader lorsque GapToLeader est nul}{gap_to_leader_when_laps_to_leader_is_null.svg}
+
+Les features Track et Compound de notre dataset nécessitent un prétraitement avant d'être utilisées dans notre modèle. Nous avons utilisé l'encodage one-hot de la bibliothèque scikit-learn pour effectuer cette transformation.
+
+L'encodage one-hot est une technique couramment utilisée pour représenter des variables catégorielles sous forme de vecteurs binaires.
+
+Par exemple pour la feature Track, en utilisant l'encodage one-hot, on crée des variables binaires pour chaque piste, où une variable est définie à 1 si la course a eu lieu sur cette piste et 0 sinon.
+
+L'utilisation de l'encodage one-hot nous permet de représenter ces caractéristiques catégorielles en évitant d'introduire un ordre ou une relation numérique entre les catégories.
+
+Pour gérer de manière robuste les nouveaux circuits, le OneHotEncoder à été initialisé avec le paramètre handle unknown='ignore'.
+De cette manière, le OneHotEncoder ignore simplement les catégories inconnues et génère un vecteur de zéros correspondant à cette catégorie
+
+\subsection{Analyse}
+
+En faisant analyse de forme, le set de données final possède 84'630 lignes et 22 colonnes dont 11 variables quantitatives et 11 qualitatives, la distribution des types de données est en figure \ref{data_types_distribution}.
+1'600 lignes ont été supprimées, car elles possédaient des valeurs manquantes, soit environ 2\% du dataset.
+\fig[H, width=0.7\textwidth]{\label{data_types_distribution}Distribution des types des features du dataset}{data_types_distribution.svg}
+
+Afin de créer nos deux classes, nous avons utilisé la colonne "PitStatus". Si la valeur de cette colonne est "In Lap", alors la cible "is pitting" est définie comme étant vraie.
+La distribution de nos 2 classes, entre au stand sur ce tour ou pas, est extrêmement déséquilibré.
+Seulement 3\% de cas positifs uniquement, une attention particulière doit donc être accordée à la gestion de ce déséquilibre
+lors de la phase de modélisation afin d'éviter tout biais potentiel.
+
+\begin{table}[H]
+    \begin{center}
+        \caption{Proportion des valeurs de la target is pitting}
+        \begin{tabular}{r|l}
+            Négatif & 0.970318 \\
+            Positif & 0.029682
+        \end{tabular}
+    \end{center}
+\end{table}
+
+Dans la section suivante, nous examinons la distribution des features du jeu de données.
+Seules les plus intéressantes sont présentées ici, les autres seront fournies en annexe \ref{sec:features}.
+
+La distribution en figure \ref{tyreLife_distribution} est unimodal et asymetrique, cela est dû à la nature de l'évolution de l'age des pneumatiques lors de la course.
+Supposons que dans une course de 60 tours on effectue des arrêts tous les 20 tours, on a trois périodes distinctes pour les âges des pneumatiques : 1-20 tours, 21-40 tours et 41-60 tours.
+Chaque valeur de 1 à 20 apparaîtra trois fois dans la colonne TyreLife.
+En revanche, si une voiture ne fait aucun arrêt et parcourt les 60 tours sans changer les pneumatiques, chaque valeur entre 1 et 60 aura seulement un échantillon.
+
+\fig[H, width=0.9\textwidth]{\label{tyreLife_distribution}
+    Distribution de la colonne TyreLife
+}{TyreLife_distribution.svg}
+
+La distribution de la variable Compound est en figure \ref{compound_distribution}.
+On remarque que les pneumatiques les plus utilisés sont les pneumatiques durs et mediums. Les pneumatiques tendres sont utilisés beaucoup moins souvent, ce qui est logique, car ils sont moins durables.
+Les intermédiaires et les wets sont utilisés beaucoup moins souvent, car ils ne sont utilisés que dans des conditions météorologiques particulières.
+
+\fig[H, width=0.9\textwidth]{\label{compound_distribution}
+    Distribution de la colonne Compound
+}{Compound_distribution.svg}
+
+La figure \ref{track_distribution}, présente la distribution de la variable Track.
+Track représente le circuit sur lequel la course a lieu, la distribution est assez déséquilibrée, car certains circuits sont plus courts que d'autres se qu'il fait que les pilotes effectuent moins de tours sur ces circuits.
+Et d'autre ne sont pas utilisés tous les ans comme le Mugello qui a été utilisé qu'une fois en 2020.
+
+
+\fig[H, width=0.9\textwidth]{\label{track_distribution}
+    Distribution de la colonne Track
+}{Track_distribution.svg}

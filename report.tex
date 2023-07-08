@@ -1,0 +1,183 @@
+\documentclass[
+    iict, % Saisir le nom de l'institut rattaché
+    il, % Saisir le nom de l'orientation
+    %confidential, % Décommentez si le travail est confidentiel
+]{heig-tb}
+
+\usepackage[nooldvoltagedirection,european,americaninductors]{circuitikz}
+\usepackage{lscape}
+\signature{mbernasconi.svg} % Remplacer par votre propre signature vectorielle.
+
+\makenomenclature
+\makenoidxglossaries
+\makeindex
+
+\addbibresource{bibliography.bib}
+
+\input{nomenclature}
+\input{acronyms}
+\input{glossary}
+\input{meta}
+
+\surroundwithmdframed{minted}
+
+%% Début du document
+\begin{document}
+\selectlanguage{french}
+\maketitle
+\frontmatter
+\clearemptydoublepage
+
+%% Requis par les dispositions générales des travaux de Bachelor
+\preamble
+\authentification
+
+%% Résumé / Résumé publiable / Version abrégée
+\begin{abstract}
+    \input{abstract}
+\end{abstract}
+
+%% Sommaire et tables
+\clearemptydoublepage
+{
+    \tableofcontents
+    \let\cleardoublepage\clearpage
+    \listoffigures
+    \let\cleardoublepage\clearpage
+    \listoftables
+    %    \let\cleardoublepage\clearpage
+    %    \listoflistings
+}
+
+\printnomenclature
+\clearemptydoublepage
+\pagenumbering{arabic}
+
+%% Contenu
+\mainmatter
+\chapter{Introduction}
+\input{introduction.tex}
+\chapter{Données}
+\input{dataset.tex}
+%\input{examples.tex}
+\chapter{Expériences}
+\input{experience.tex}
+\chapter{Conclusion}
+\input{conclusion.tex}
+
+\clearpage
+\printbibliography
+
+\appendix
+\appendixpage
+\addappheadtotoc
+\chapter{Première annexe}
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{Paramètres de la simulation}Paramètres de la simulation utilisées pour les examples en introduction}
+        \begin{tabular}{l|l}
+            $N$                                & 70   \\
+            $t_{optimal}$                      & 95   \\
+            $t_{penalite}$                     & 0.06 \\
+            $p_{depart}$                       & 110  \\
+            $d_{per\textit{f}ormance}(tendre)$ & 0    \\
+            $d(tendre)$                        & 0.2  \\
+            $\delta{d(tendre)}$                & 0.1  \\
+            $d_{per\textit{f}ormance(medium)}$ & 0.75 \\
+            $d(medium)$                        & 0.08 \\
+            $\delta{d(medium)}$                & 0.08 \\
+            $d_{per\textit{f}ormance}(dur)$    & 1.5  \\
+            $d(dur)$                           & 0.06 \\
+            $\delta{d(dur)}$                   & 0.07 \\
+            $t_pitstop$                        & 25   \\
+            $t_pitstop_safety_car$             & 15   \\
+        \end{tabular}
+    \end{center}
+\end{table}
+\begin{landscape}
+    \begin{table}[H]
+        \begin{center}
+            \caption{Flux "\label{Live Timing}Live Timing" de la voiture 31 pendant le Grand Prix de Monaco 2021}
+            \begin{tabular}{llllllllll}
+                LapNumber & Driver & LapTime         & Stint & TotalLaps & Compound & New & TyresNotChanged & Time            & LapFlags \\ \hline
+                2         & 31     & 00:01:20.154000 & 0     & -         & -        & -   & -               & 00:35:51.209000 & 1        \\
+                3         & 31     & 00:01:19.421000 & 0     & -         & -        & -   & -               & 00:37:05.565000 & -        \\
+                -         & 31     &                 & 0     & 3         & -        & -   & -               & 00:37:05.940000 & -        \\
+                4         & 31     & 00:01:18.494000 & 0     & -         & -        & -   & -               & 00:38:24.008000 & -        \\
+                -         & 31     &                 & 0     & 4         & -        & -   & -               & 00:38:25.951000 & -        \\
+                5         & 31     &                 & 0     & -         & -        & -   & -               & 00:39:42.570000 & -        \\
+                -         & 31     &                 & 0     & 5         & -        & -   & -               & 00:39:45.937000 & -        \\
+                -         & 31     &                 & 0     & 6         & -        & -   & -               & 00:41:05.970000 & -        \\
+                -         & 31     &                 & 0     & 7         & -        & -   & -               & 00:42:20.948000 & -        \\
+                8         & 31     & 00:01:17.967000 & 0     & -         & -        & -   & -               & 00:43:37.668000 & -        \\
+                -         & 31     &                 & 0     & 8         & -        & -   & -               & 00:43:40.948000 & -        \\
+                9         & 31     &                 & 0     & -         & -        & -   & -               & 00:44:56.051000 & -        \\
+                -         & 31     &                 & 0     & 9         & -        & -   & -               & 00:45:00.953000 & -        \\
+                -         & 31     &                 & 0     & 10        & -        & -   & -               & 00:46:15.975000 & -        \\
+                11        & 31     & 00:01:17.770000 & 0     & -         & -        & -   & -               & 00:47:32.098000 & -        \\
+                -         & 31     &                 & 0     & 11        & -        & -   & -               & 00:47:35.967000 & -        \\
+                12        & 31     & 00:01:17.677000 & 0     & -         & -        & -   & -               & 00:48:49.775000 & -
+            \end{tabular}
+        \end{center}
+    \end{table}
+\end{landscape}
+
+\chapter{Deuxième annexe\label{sec:features}}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne LapNumber.
+    On remarque que la distribution est très uniforme, car la variable augmente linéairement au fil de la course.
+    On remarque par contre qu'elle est asymétrique, car certaines voitures ne terminent pas la course et certaines courses sont plus longues que d'autres.
+}{LapNumber_distribution.svg}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne LapTime.
+}{LapTime_distribution.svg}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne Stint.
+    Elle est similaire à celle de TyreLife pour les mêmes raisons.
+}{Stint_distribution.svg}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne NumberOfPitStops.
+    Elle est identique à Stint car NumberOfPitsStops = Stint - 1.
+}{NumberOfPitStops_distribution.svg}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne Position.
+    Elle est uniforme avec une asymétrie à droite en raison des voitures qui se retirent avant la fin des courses.
+}{Position_distribution.svg}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne GapToLeader,
+    La distribution est très concentrée autour de 0 étant donné que le leader de la course est toujours à 0.
+    La distribution est très asymétrique à droite, ce qui est logique, car la plupart des pilotes sont assez près du leader au début de la course.
+}{GapToLeader_distribution.svg}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne DistanceToDriverAhead.
+}{DistanceToDriverAhead_distribution.svg}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne LapsToLeader
+}{LapsToLeader_distribution.svg}
+
+\fig[H, width=0.9\textwidth]{
+    Distribution de la colonne TotalLaps
+}{TotalLaps_distribution.svg}
+
+%%fi
+
+\let\cleardoublepage\clearpage
+\backmatter
+
+\label{glossaire}
+\printnoidxglossary
+\label{index}
+\printindex
+
+% Le colophon est le dernier élément d'un document qui contient des notes de l'auteur concernant la mise en page et l'édition du document : il est parfaitement optionnel.
+%\input{colophon.tex}
+
+\end{document}
