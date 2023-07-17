@@ -167,6 +167,89 @@
     Distribution de la colonne TotalLaps
 }{TotalLaps_distribution.svg}
 
+\chapter{Troisième annexe}
+
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{grid_search_results}Résultats du GridSearchCV pour le modèle RandomForestClassifier optimisant le score F1.}
+        \begin{tabular}{llllll}
+            rang & class weight       & max depth & max features & n estimators & score    \\
+            1    & balanced subsample & 5.0       & sqrt         & 2000         & 0.130011 \\
+            2    & balanced           & 5.0       & sqrt         & 500          & 0.129973 \\
+            3    & balanced subsample & 5.0       & sqrt         & 500          & 0.129856 \\
+            4    & balanced subsample & 5.0       & log2         & 2000         & 0.129681 \\
+            5    & balanced           & 5.0       & log2         & 2000         & 0.129667 \\
+            6    & balanced           & 5.0       & sqrt         & 2000         & 0.129547 \\
+            7    & balanced subsample & 5.0       & sqrt         & 1000         & 0.129496 \\
+            8    & balanced           & 5.0       & sqrt         & 1000         & 0.129489 \\
+            9    & balanced subsample & 5.0       & log2         & 1000         & 0.128940 \\
+            10   & balanced subsample & 5.0       & log2         & 100          & 0.128932 \\
+            11   & balanced           & 5.0       & log2         & 1000         & 0.128561 \\
+            12   & balanced subsample & 5.0       & sqrt         & 100          & 0.128288 \\
+            13   & balanced subsample & 5.0       & log2         & 500          & 0.127931 \\
+            14   & balanced           & 5.0       & log2         & 500          & 0.127563 \\
+            15   & balanced           & 5.0       & sqrt         & 100          & 0.127500 \\
+            16   & balanced           & 5.0       & log2         & 100          & 0.126691 \\
+            17   & balanced subsample & 5.0       & None         & 2000         & 0.122646 \\
+            18   & balanced subsample & 5.0       & None         & 1000         & 0.122618 \\
+            19   & balanced           & 5.0       & None         & 2000         & 0.122528 \\
+            20   & balanced           & 5.0       & None         & 1000         & 0.122481 \\
+            21   & balanced subsample & 5.0       & None         & 100          & 0.122207 \\
+            22   & balanced subsample & 5.0       & None         & 500          & 0.122206 \\
+            23   & balanced           & 5.0       & None         & 500          & 0.122176 \\
+            24   & balanced           & 5.0       & None         & 100          & 0.121999 \\
+            25   & balanced           & 20.0      & log2         & 100          & 0.090315 \\
+            26   & balanced           & 20.0      & log2         & 500          & 0.087494 \\
+            27   & balanced           & 20.0      & None         & 100          & 0.086376 \\
+            28   & balanced subsample & 20.0      & None         & 100          & 0.084230 \\
+            29   & balanced subsample & 20.0      & None         & 500          & 0.083750 \\
+            30   & balanced subsample & 20.0      & log2         & 2000         & 0.083263 \\
+            31   & balanced           & 20.0      & None         & 1000         & 0.083231 \\
+            32   & balanced subsample & 20.0      & None         & 1000         & 0.083107 \\
+            33   & balanced subsample & 20.0      & None         & 2000         & 0.082549 \\
+            34   & balanced subsample & 20.0      & log2         & 500          & 0.082350 \\
+            35   & balanced           & 20.0      & None         & 2000         & 0.082121 \\
+            36   & balanced           & 20.0      & None         & 500          & 0.081996 \\
+            37   & balanced           & 20.0      & log2         & 2000         & 0.081599 \\
+            38   & balanced subsample & 20.0      & log2         & 100          & 0.080868 \\
+            39   & balanced           & 20.0      & log2         & 1000         & 0.080385 \\
+            40   & balanced subsample & 20.0      & log2         & 1000         & 0.078841 \\
+            41   & balanced           & 20.0      & sqrt         & 100          & 0.069933 \\
+            42   & balanced subsample & 20.0      & sqrt         & 100          & 0.066912 \\
+            43   & balanced subsample & 20.0      & sqrt         & 1000         & 0.065213 \\
+            44   & balanced subsample & 20.0      & sqrt         & 500          & 0.064601 \\
+            45   & balanced subsample & 20.0      & sqrt         & 2000         & 0.063450 \\
+            46   & balanced           & 20.0      & sqrt         & 2000         & 0.062764 \\
+            47   & balanced           & 20.0      & sqrt         & 1000         & 0.062609 \\
+            48   & balanced           & 20.0      & sqrt         & 500          & 0.058491 \\
+            49   & balanced           & NaN       & None         & 500          & 0.004496 \\
+            50   & balanced subsample & NaN       & None         & 1000         & 0.004484 \\
+            51   & balanced subsample & NaN       & None         & 2000         & 0.004476 \\
+            52   & balanced           & NaN       & None         & 2000         & 0.004339 \\
+            53   & balanced subsample & NaN       & None         & 500          & 0.003473 \\
+            54   & balanced subsample & NaN       & None         & 100          & 0.003272 \\
+            55   & balanced           & NaN       & None         & 1000         & 0.003261 \\
+            56   & balanced           & NaN       & sqrt         & 100          & 0.002188 \\
+            57   & balanced           & NaN       & None         & 100          & 0.002000 \\
+            58   & balanced subsample & NaN       & log2         & 2000         & 0.000000 \\
+            58   & balanced           & NaN       & sqrt         & 2000         & 0.000000 \\
+            58   & balanced           & NaN       & log2         & 2000         & 0.000000 \\
+            58   & balanced           & NaN       & log2         & 1000         & 0.000000 \\
+            58   & balanced           & NaN       & log2         & 500          & 0.000000 \\
+            58   & balanced           & NaN       & log2         & 100          & 0.000000 \\
+            58   & balanced           & NaN       & sqrt         & 1000         & 0.000000 \\
+            58   & balanced subsample & NaN       & log2         & 1000         & 0.000000 \\
+            58   & balanced           & NaN       & sqrt         & 500          & 0.000000 \\
+            58   & balanced subsample & NaN       & sqrt         & 100          & 0.000000 \\
+            58   & balanced subsample & NaN       & sqrt         & 1000         & 0.000000 \\
+            58   & balanced subsample & NaN       & sqrt         & 2000         & 0.000000 \\
+            58   & balanced subsample & NaN       & log2         & 100          & 0.000000 \\
+            58   & balanced subsample & NaN       & log2         & 500          & 0.000000 \\
+            58   & balanced subsample & NaN       & sqrt         & 500          & 0.000000
+        \end{tabular}
+    \end{center}
+\end{table}
+
 %%fi
 
 \let\cleardoublepage\clearpage

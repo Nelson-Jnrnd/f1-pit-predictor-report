@@ -1,10 +1,12 @@
-La première approche est celle de l'imitation learning dans laquelle on utilise les données historiques comme target de notre modèle.
-Ce
+Au cours de ce travail nous utilisons un apprentissage supervisé, l'idée est d'avoir une approche d'imitation learning.
+C'est à dire que les données historiques sont utilisées pour l'entrainement et les décisions prises par les équipes sont considérées comme ground-truth.
+On utilise cette méthode car elle nécessite moins de mise en place qu'une approche par renforcement qui nécessiterais la mise en place d'une simulation
+pour estimer le temps gagné dans les différents scénarios hypothètiques.
+En revanche l'inconvénient de cette méthode est que les modèles ne peuvent pas surpasser les performances des stratégistes étant donnée qu'ils tentent de les copier.
+Il est estimé que cela n'est pas un problème dans la mesure où les stratégies employées sont bonnes en moyenne.
 
 La première modélisation explorée est celle d'une classification binaire
 où le modèle considère les informations d'un seul tour de course en entrée et détermine en sortie si la voiture s'arrête ou non à la fin de celui-ci.
-
-Au moment du rendu intermédiaire, un simple RandomForest, servant de baseline a été entrainé.
 
 Le modèle est entrainé sur les années 2019 à 2022, en réservant l'année 2023 comme set de validation afin d'évaluer la capacité du modèle à généraliser
 sur des données qui ne sont pas inclus dans le set d'entrainement.
@@ -14,18 +16,75 @@ Les étapes de preprocessing ont ensuite été appliquée sur les sets de donné
 Ce phénomène se produit lorsqu'une information provenant du set de test ou de validation est incorporée dans le processus d'entraînement du modèle,
 ce qui fausse les résultats de l'évaluation et conduit à une estimation optimiste des performances du modèle.
 
-Les paramètres du modèle entrainée sont en table \ref{rf_params}.
+Le premier algorithme de classification utilisé est Random Forest, c'est un algorithme d'ensemble qui combine plusieurs arbres de décision.
+Il a été choisit car il est performant sur des sets de données déséquilibrés avec mécanisme de pondération des classes et qu'il est interprétable.
+L'interprétabilité est un critère important car il permet de comprendre les décisions prises par le modèle se qui vas dans un premier temps nous aider à l'améliorer
+et dans un second temps à donner confiance aux utilisateurs du modèle.
+
+\subsection{Random Forest}
+L'implémentation utilisée est celle de scikit-learn \cite{scikit-learn-random-forest} qui est une librairie open-source de machine learning pour python.
+Les hyperparamètres du modèle ont été choisis après une recherche par grid search avec une validation croisée sur 4 folds.
+
+Grid search est une méthode d'optimisation des hyperparamètres dans laquelle un modèle est entrainé pour chaque combinaison d'hyperparamètres.
+Il est donc important de définir une métrique pour estimer la qualité des modèles entrainés.
+\subsubsection{Métriques}
+Étant donnés, notre set de données très déséquilibré, nous n'allons pas utiliser l'accuracy ou le score ROC AUC car ils ne sont pas adaptés.
+
+Le choix repose entre le F1-score et la balanced accuracy qui sont les 2 métriques les plus communement utilisées pour les sets de données déséquilibrées.
+
+Pour décider quelle métrique favoriser on s'attarde sur leur définition respective à partir des ensembles des classes prédites.
+La figure \ref{confusion_diagram} visualise graphiquement ces ensembles pour le cas d'une classification binaire.
+\fig[H, width=0.5\textwidth]{\label{confusion_diagram}Visualisation des résultats d'un système de classification binaire}{confusion_matrice.drawio.svg}
+
+La balanced accuracy est définie comme la moyenne entre la sensitivité (rappel) et la spécificité :
+$$
+    \frac{\text{spécificité}+\text{sensitivité}}{2}
+$$
+La figure \ref{sensitivity_specificity} visualise les ensembles considérés par la spécificité et la sensitivité.
+\fig[H, width=0.4\textwidth]{\label{sensitivity_specificity}Visualisation de la spécificité et de la sensitivité}{sensitivity_specificity.drawio.svg}
+la sensitivité ou rappel indique combien de fois le modèle a correctement prédit la classe positive parmi tous les échantillons positifs réels.
+La spécificité est l'équivalent de la sensitivité pour la classe négative, elle mesure la proportion d'échantillons négatifs correctement prédits par le modèle.
+
+Le F1-score est défini comme la moyenne harmonique entre la précision et la sensitivité :
+$$
+    F=2\cdot\frac{\text{précision} \cdot \text{sensitivité}}{\text{précision} + \text{sensitivité}}
+$$
+La précision indique combien de fois le modèle a correctement prédit la classe positive parmi toutes les prédictions positives faites,
+La figure \ref{precision_recall} montre les ensembles considérés par ses 2 métriques.
+\fig[H, width=0.4\textwidth]{\label{precision_recall}Visualisation de la précision et de la sensitivité}{precision_recall.drawio.svg}
+On peut observer que le F-score pénalise une précision ou un rappel faible, 2 métriques qui ne considèrent pas les vrai négatifs et qui accordent une grande importance à l'identification de la classe positive.
+Pour cette raison, le f1 score est souvant utilisé dans les problèmes de détections d'anomalies, car les sets de données sont fortement biasés en faveur de la classe négative.
+Notre cas est assez similaire à ce cas de figure avec 97\% de cas négatifs, le f1 score devrait donc être plus adapté.
+
+En utilisant l'implémentation GridSearchCV de scikit-learn, nous avons effectué une optimisation du f1 score, les hyperparamètres sont en table \ref{grid_params}.
 
 \begin{table}[H]
     \begin{center}
-        \caption{\label{rf_params}Paramètres du premier modèle}
+        \caption{\label{grid_params}Paramètres de la recherche GridSearchCV}
         \begin{tabular}{r|l}
-            hyperparamètre    & valeur             \\ \hline
-            class weight      & balanced subsample \\
-            n estimator       & 1000               \\
-            max depth         & 10                 \\
-            min samples split & 2                  \\
-            min samples leaf  & 1                  \\
+            hyperparamètre & valeurs                            \\ \hline
+            class weight   & None, balanced, balanced subsample \\
+            n estimator    & 100, 500, 1000, 2000               \\
+            max depth      & 5, 20, None                        \\
+            max features   & sqrt, log2, None                   \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+La table complète des résultats est en annexe \ref{grid_search_results}.
+
+Le meilleur modèle obtient un f1 score de 0.13 avec les paramètres en table \ref{rf_params}.
+Ce score est très faible, nous allons étudier les performances du modèle sur le set de validation pour comprendre ce résultat.
+
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rf_params}Paramètres du meilleur modèle}
+        \begin{tabular}{r|l}
+            hyperparamètre & valeur             \\ \hline
+            class weight   & balanced subsample \\
+            n estimator    & 2000               \\
+            max depth      & 5                  \\
+            max features   & sqrt               \\
         \end{tabular}
     \end{center}
 \end{table}
@@ -38,8 +97,8 @@ En raison de la nature déséquilibrée de notre classification, on ne peut pas 
         \caption{\label{rf_matrix}Matrice de confusion de l'entrainement du premier modèle, les colonnes représentent les prédictions et les lignes le ground truth.}
         \begin{tabular}{r|cc}
                     & Négatif & Positif \\ \hline
-            Négatif & 13802   & 2005    \\
-            Positif & 148     & 344     \\
+            Négatif & 10470   & 3422    \\
+            Positif & 103     & 281     \\
         \end{tabular}
     \end{center}
 \end{table}
@@ -49,19 +108,41 @@ En raison de la nature déséquilibrée de notre classification, on ne peut pas 
         \caption{\label{rf_results}Matrice de confusion de l'entrainement du premier modèle, les colonnes représentent les prédictions et les lignes le ground truth.}
         \begin{tabular}{r|ccc}
             Classe  & Precision & Recall & F1Score \\ \hline
-            Négatif & 0.99      & 0.87   & 0.93    \\
-            Positif & 0.15      & 0.7    & 0.24    \\
+            Négatif & 0.99      & 0.75   & 0.86    \\
+            Positif & 0.08      & 0.73   & 0.14    \\
         \end{tabular}
     \end{center}
 \end{table}
 
 
 On remarque dans les résultats que le modèle à de la peine à classifier les cas positifs avec beaucoup de faux-positifs.
-Les résultats sont étudiés plus en détails sur une course du set de validation 2023 en figure \ref{rf_validation}.
-On peut observer un comportement similaire aux résultats obtenus dans l'étude “Virtual Strategy Engineer: Using Artificial Neural Networks for Making Race Strategy Decisions in Circuit Motorsport”. \cite{app10217805}
-Le modèle ne semble pas pouvoir augmenter la probabilité d'arrêt au stand assez rapidement pour éviter les faux positifs.
-Les arrêts sont recommandés 4 à 5 tours trop tôt ou alors pas du tout comme dans la course en figure \ref{rf_validation2},
-la probabilité d'un arrêt chute suite à un arrêt même si le modèle ne l'as pas prédit.
 
-\fig[H, width=0.9\textwidth]{\label{rf_validation}Progression des probabilités d'arrêt au stand pour le Grand Prix de Bahreïn 2023 de Max Verstappen}{predictions_by_lapNumber_Driver_1.svg}
-\fig[H, width=0.9\textwidth]{\label{rf_validation2}Progression des probabilités d'arrêt au stand pour le Grand Prix de Bahreïn 2023 de Pierre Gasly}{predictions_by_lapNumber_Driver_10.svg}
+On peut observer la progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Max Verstappen en figure \ref{barcelona_2023}.
+
+\fig[H, width=0.9\textwidth]{
+    \label{barcelona_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Max Verstappen.
+    Les probabilités sont calculées à chaque tour en utilisant les données du tour précédent.
+    Les lignes verticales rouges indiquent la target du modèle, c'est à dire un tour avant l'arrêt au stand réel.
+    Les bares horizontales en haut de la figure indique le composé de pneu utilisé (rouge = tendre, jaune = médium, gris = dur).
+}{predictions_barcelona_verstappen.svg}
+
+Le modèle semble capturer la relation entre les arrêts au stand et les données de course.
+Les probabilités d'arrêt au stand augmentent à chaque tour et diminuent drastitquement après un arrêt au stand réel.
+Les probabilités augmentent également plus faiblement pendant le relai sur pneus durs se qui est cohérent avec la dégradation plus faible de ces pneus.
+
+On peut observer la progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez et Logan Sargeant en figure \ref{baku_2023}.
+
+\fig[H, width=0.9\textwidth]{
+    \label{baku_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez et Logan Sargeant.
+    Les zones jaunes indiquent les périodes de drapeau jaune, de safety car ou de virtual safety car.
+}{predictions_baku_perez_sargeant.svg}
+
+La période de drapeau jaune au tour 10 a poussé le modèle à prédire un arrêt au stand pour Sergio Perez.
+Ce qui est cohérent avec la stratégie de course de l'équipe Red Bull qui a effectué un arrêt au stand pour Sergio Perez au tour 11.
+Cependant la période de drapeau jaune au tour 48 a également poussé le modèle à prédire un arrêt au stand alors qu'il n'y en a pas eu.
+Cela est dû à un manque d'information sur la raison du drapeau jaune. La première période de drapeau jaune est due à un accident et donc est fortement suseptible d'entrainer une voiture de sécurité.
+Alors que la deuxième période de drapeau jaune est due à une sortie de piste sans conséquence et donc n'entraine pas de voiture de sécurité.
+Ces information ne sont pas disponibles dans les données car elles sont observables uniquement en regardant les images de la course.
+
+On peut également noter que la période de safety car ne provoque pas de prédiction d'arrêt au stand pour Logan Sargeant qui s'était déjà arrêté au tour 8.
+Le modèle capture donc l'importance de l'arrêt au stand pendant une période d'arrêt mais uniquement si un arrêt au stand est nécessaire.

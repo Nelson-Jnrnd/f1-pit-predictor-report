@@ -199,13 +199,9 @@ Il est difficile et peut intéressant de déterminer l'écart entre une voiture 
 \fig[H, width=0.9\textwidth]{\label{gap_leader_laps}Histogramme de la caractéristique LapsToLeader lorsque GapToLeader est nul}{gap_to_leader_when_laps_to_leader_is_null.svg}
 
 Les features Track et Compound de notre dataset nécessitent un prétraitement avant d'être utilisées dans notre modèle. Nous avons utilisé l'encodage one-hot de la bibliothèque scikit-learn pour effectuer cette transformation.
-
 L'encodage one-hot est une technique couramment utilisée pour représenter des variables catégorielles sous forme de vecteurs binaires.
-
 Par exemple pour la feature Track, en utilisant l'encodage one-hot, on crée des variables binaires pour chaque piste, où une variable est définie à 1 si la course a eu lieu sur cette piste et 0 sinon.
-
 L'utilisation de l'encodage one-hot nous permet de représenter ces caractéristiques catégorielles en évitant d'introduire un ordre ou une relation numérique entre les catégories.
-
 Pour gérer de manière robuste les nouveaux circuits, le OneHotEncoder à été initialisé avec le paramètre handle unknown='ignore'.
 De cette manière, le OneHotEncoder ignore simplement les catégories inconnues et génère un vecteur de zéros correspondant à cette catégorie
 
