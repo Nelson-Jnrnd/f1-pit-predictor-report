@@ -46,7 +46,7 @@ L'API de la Formule 1 permet d'écouter un flux de données dit "Live Timing".
 Ce flux contient différents canaux :
 \begin{table}[H]
     \begin{center}
-        \caption{Liste des différents canaux fournis dans le flux de données "Live Timing"}
+        \caption{Liste des différents canaux fournis dans le flux de données "Live Timing" \cite{fastf1documentation}}
         \begin{tabular}{l|l}
             Canal           & Description                                            \\ \hline
             LapNumber       & Numéro du tour en cours                                \\
@@ -72,7 +72,7 @@ L'API de la Formule 1 émet également un flux de données pour les données des
 Les données des capteurs sont envoyés a travers 2 différents flux "Car data" et "Position data" avec des mesures qui sont envoyées environ toutes les 240 millisecondes.
 \begin{table}[H]
     \begin{center}
-        \caption{Liste des différents canaux fournis dans le flux de données "Car data"}
+        \caption{Liste des différents canaux fournis dans le flux de données "Car data" \cite{fastf1documentation}}
         \begin{tabular}{l|l}
             Canal    & Description                                                            \\ \hline
             Time     & Temps écoulé depuis le début de la session                             \\
@@ -91,7 +91,7 @@ Les données des capteurs sont envoyés a travers 2 différents flux "Car data" 
 
 \begin{table}[H]
     \begin{center}
-        \caption{Liste des différents canaux fournis dans le flux de données "Position data"}
+        \caption{Liste des différents canaux fournis dans le flux de données "Position data" \cite{fastf1documentation}}
         \begin{tabular}{l|l}
             Canal   & Description                                                \\ \hline
             Time    & Temps écoulé depuis le début de la session                 \\
@@ -109,12 +109,12 @@ Un exemple de données télémétriques échantillonnées sur un tour de course 
 
 \section{Création d'un dataset}
 
-La première expérience est de créer un classificateur binaire (entrée au stand ou pas) qui prends en entrée les informations d'un seul tour de course.
+Les modélisations explorées dans ce travail prennent en entrée les informations d'un ou plusieurs tours de course.
 Dans ce contexte, nous avons décidé de discrétiser chaque course en tour pour chaque voiture.
-Une course de 50 tours engendre alors 50 x 20 entrées dans la base de données si les 20 voitures terminent la course.
+À titre d'exemple, une course de 50 tours engendre alors 50 x 20 entrées dans la base de données si les 20 voitures terminent la course.
 
 Le sous-ensemble des champs considérés est présentée en table \ref{dataset_features}. Ces variables retenues résultent d'une phase de sélection dans laquelle
-les variables redondantes ou estimées comme non prédictive ont été éliminées.
+les variables non pertinentes, redondantes ou non prédictive ont été éliminées.
 
 \begin{table}[H]
     \begin{center}
@@ -133,7 +133,6 @@ les variables redondantes ou estimées comme non prédictive ont été éliminé
             Stint                   & Nombre de relais effectués                       \\
             DistanceToDriverAhead   & Distance en mètre avec la voiture devant         \\
             DriverAhead             & Numéro unique du pilote devant                   \\
-            NumberOfPitStops        & Nombre d'arrêts au stand déjà éffectuées         \\
             Position                & Position dans la course                          \\
             GapToLeader             & Distance en secondes avec le pilote en tête      \\
             IntervalToPositionAhead & Distance en secondes avec le pilote devant       \\
@@ -142,6 +141,8 @@ les variables redondantes ou estimées comme non prédictive ont été éliminé
         \end{tabular}
     \end{center}
 \end{table}
+
+Pour simplifier les opérations de regroupement des tours, 2 colonnes ont étées ajoutées "RoundNumber" et "Year", respectivement le numéro de la course dans la saison et l'année de la course.
 
 Pour les données télémétriques qui sont échantillonnées plus d'une fois par tour,
 on prend la dernière mesure au moment où la voiture franchit la ligne d'arrivée.
@@ -152,58 +153,6 @@ est réservée comme données de test. La base de données contient 87'845 tours
 \section{Exploration des données}
 Dans ce chapitre, nous détaillons les modifications apportées aux données pour les préparer à l'entrainement du modèle.
 Ainsi que les informations que nous avons pu tirer de l'étude du set de données.
-
-\subsection{Preprocessing}
-La feature TrackStatus communiquée dans l'api officielle contient un ensemble d'entier concaténé dans une chaine de caractères où chaque entier représente un drapeau de course agité au cours du tour.
-Les différents status et leur entier correspondant sont détaillé dans la table \ref{track_status_table}.
-\begin{table}[H]
-    \begin{center}
-        \caption{\label{track_status_table}Correspondance des status de piste}
-        \begin{tabular}{r|l|l}
-            Entier & Correspondance       & Description                                    \\ \hline
-            1      & Drapeau vert         & La piste est libre                             \\
-            2      & Drapeau jaune        & La piste est partiellement bloquée, la course  \\
-                   &                      & continue, mais les dépassements sont interdit  \\
-                   &                      & dans un ou plusieurs secteurs                  \\
-            4      & Voiture de sécurité  & La course est neutralisée, les voitures ne     \\
-                   &                      & peuvent pas dépasser, réduisent leur vitesse   \\
-                   &                      & et font la queue derrière la voiture de        \\
-                   &                      & sécurité                                       \\
-            5      & Drapeau rouge        & La course est interrompue, toutes les voitures \\
-                   &                      & rentrent au stand                              \\
-            6      & Voiture de sécurité  & La course est neutralisée, les voitures ne     \\
-                   & virtuelle            & peuvent pas dépasser et réduisent leur         \\
-                   &                      & vitesse                                        \\
-            7      & Fin de la voiture de & La voiture de sécurité rentre à la fin de ce   \\
-                   & sécurité             & tour
-        \end{tabular}
-    \end{center}
-\end{table}
-
-Pour l'utiliser, elle a été transformée en 6 features binaires où chaque feature représente la présence d'un statut.
-Les distributions de la variable avant et après la transformation est observable en figure \ref{track_status_plot}.
-\fig[H, width=0.9\textwidth]{\label{track_status_plot}Distribution de la feature TrackStatus avant et après la discrétisation}{track_status_binarized.svg}
-
-6'455 observations avait des valeurs manquantes pour les colonnes DriverAhead et DistanceToDriverAhead. En étudiant la distribution des numéros de tour de ces observations,
-présentés en figure \ref{hist_missing_driver_ahead}, on remarque que la plupart des tours sont les premiers de la course,
-le reste de la distribution est assez uniforme avec une légère diminution de la fréquence après 55 tours, ce qui est logique, car la majorité des courses durent entre 50 et 60 tours.
-Les premiers tours de courses seront supprimés du dataset.
-
-\fig[H, width=0.9\textwidth]{\label{hist_missing_driver_ahead}Distribution de la feature LapNumber pour les tours avec des valeurs manquantes}{lap_number_without_driver_ahead.svg}
-
-En figure \ref{gap_leader_missing}, on voit que beaucoup d'échantillons n'ont pas de valeurs pour la colonne GapToLeader et en observants la figure \ref{gap_leader_laps}, on remarque que ce sont tous des voitures qui ont au moins un tour de retard.
-Il est difficile et peut intéressant de déterminer l'écart entre une voiture retardataire et le leader, les valeurs manquantes ont donc été remplacées par -1.
-
-\fig[H, width=0.9\textwidth]{\label{gap_leader_missing}Valeurs manquantes de chaque colonne, les observations d'IntervalToPositionAhead nulles sont celles de voiture avec un tour de retard sur tout le peloton, celles avec des valeurs manquantes de DistanceToDriverAhead et DriverAhead sont ceux du pilote en tête.}{null_values_per_column_after_cleaning.svg}
-
-\fig[H, width=0.9\textwidth]{\label{gap_leader_laps}Histogramme de la caractéristique LapsToLeader lorsque GapToLeader est nul}{gap_to_leader_when_laps_to_leader_is_null.svg}
-
-Les features Track et Compound de notre dataset nécessitent un prétraitement avant d'être utilisées dans notre modèle. Nous avons utilisé l'encodage one-hot de la bibliothèque scikit-learn pour effectuer cette transformation.
-L'encodage one-hot est une technique couramment utilisée pour représenter des variables catégorielles sous forme de vecteurs binaires.
-Par exemple pour la feature Track, en utilisant l'encodage one-hot, on crée des variables binaires pour chaque piste, où une variable est définie à 1 si la course a eu lieu sur cette piste et 0 sinon.
-L'utilisation de l'encodage one-hot nous permet de représenter ces caractéristiques catégorielles en évitant d'introduire un ordre ou une relation numérique entre les catégories.
-Pour gérer de manière robuste les nouveaux circuits, le OneHotEncoder à été initialisé avec le paramètre handle unknown='ignore'.
-De cette manière, le OneHotEncoder ignore simplement les catégories inconnues et génère un vecteur de zéros correspondant à cette catégorie
 
 \subsection{Analyse}
 
@@ -239,7 +188,7 @@ En revanche, si une voiture ne fait aucun arrêt et parcourt les 60 tours sans c
 }{TyreLife_distribution.svg}
 
 La distribution de la variable Compound est en figure \ref{compound_distribution}.
-On remarque que les pneumatiques les plus utilisés sont les pneumatiques durs et mediums. Les pneumatiques tendres sont utilisés beaucoup moins souvent, ce qui est logique, car ils sont moins durables.
+On remarque que les pneumatiques les plus utilisés sont les pneumatiques durs et mediums. Les pneumatiques tendres sont utilisés beaucoup moins souvent, car ils sont moins durables.
 Les intermédiaires et les wets sont utilisés beaucoup moins souvent, car ils ne sont utilisés que dans des conditions météorologiques particulières.
 
 \fig[H, width=0.9\textwidth]{\label{compound_distribution}
@@ -254,3 +203,97 @@ Et d'autre ne sont pas utilisés tous les ans comme le Mugello qui a été utili
 \fig[H, width=0.9\textwidth]{\label{track_distribution}
     Distribution de la colonne Track
 }{Track_distribution.svg}
+
+\subsection{Preprocessing}
+Les données doivent être préparées pour être utilisées dans le modèle. Les données inutilisable doivent être éliminées
+et certaines colonnes doivent être transformées.
+
+La gestion de conditions météorologiques changeantent est un problème complexe qui n'est pas abordé dans ce travail.
+Les courses sous la pluie sont donc exclues du dataset. Pour ce faire, les tours ont étés regroupés par course en utilisant les champs "DriverNumber", "RoundNumber" et "Year".
+Un groupe représente alors l'intégralité des tours d'une course pour un pilote donné. Les courses qui contiennent des tours avec des pneumatiques pluie sont exclues.
+
+Dans certains cas, les pilotes ne terminent pas la course pour des raisons diverses (accident, problème mécanique, etc.).
+Ces tours doivent également être exclus du dataset. Pour ce faire, les tours ont encore étés regroupés par course de la même manière.
+Un groupe est alors considéré comme valide si le nombre de tours dans le groupe est supérieur au nombre de tours total de la course moins 3.
+Cette marge de 3 tours est ajoutée pour considérer les voitures qui abandonnent dans les derniers tours de la course et les voitures ayant des tours de retards car leur stratégie est quand même pertinente.
+
+Dans d'autres cas, différentes situations peuvent amener des voitures à effectuer des arrêts au stands supplémentaires (pénalité, dégâts, etc.).
+Ces arrêts supplémentaires peuvent fausser la prédiction de la stratégie. Nous avons donc décidé de ne pas les considérer.
+Les tours ont étés regroupés par course comme précédemment et les courses avec plus de 3 arrêts ont étés exclues.
+
+Les colonnes cibles sont "PitStatus" et "Compound". "PitStatus" est une colonne catégorielle qui indique si la voiture est entrée au stand au cours du tour.
+"Compound" est une colonne catégorielle qui indique le composé de pneu utilisé au cours du tour.
+L'objectif étant de prédire le tour d'entrée au stand,  la variable "PitStatus" est transformée en une variable binaire qui indique si la voiture est entrée au stand au cours du tour.
+Ensuite, les valeurs de "PitStatus" sont décalées d'un tour vers le haut après avoir groupés les tours en courses. Pour le dernier tour de course on considère que la voiture n'entrera pas au stand.
+Ainsi, la valeur de "PitStatus" au tour $n$ correspond au tour d'entrée au stand du tour $n+1$.
+De cette manière quand le modèle effectue une prédiction avec les données du tour $n$, il prédit si le pilote entrera au stand au tour $n+1$.
+
+La variable "Compound" est elle décalée de 2 tours vers le haut et copiée dans la colonne "NextCompound". Ainsi, la valeur de "NextCompound" au tour $n$ correspond au composé de pneu utilisé au tour $n+2$.
+La raison de ce décalage est que l'on veut décider du composé de pneu à utiliser au moment ou l'on prend la décision d'entrer au stand.
+Étant donnée que les informations du tour sont capturées quand la voiture franchit la ligne d'arrivée,
+le nouveau composé de pneu est connu au moment où la voiture franchit la ligne d'arrivée lors de son tour de sortie des stands.
+
+Pour éviter de biaiser le modèle avec des informations comme l'identité du pilote ou de l'écurie, les tours ont étés anonymisés en supprimant les colonnes "DriverNumber" et "Team".
+En effet, les performances des pilotes et des écuries varient d'une saison à l'autre et il ne faut pas que le modèle apprenne à prédire la stratégie en fonction de ces informations.
+
+La feature TrackStatus communiquée dans l'api officielle contient un ensemble d'entier concaténé dans une chaine de caractères où chaque entier représente un drapeau de course agité au cours du tour.
+Les différents status et leur entier correspondant sont détaillé dans la table \ref{track_status_table}.
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{track_status_table}Correspondance des status de piste}
+        \begin{tabular}{r|l|l}
+            Entier & Correspondance       & Description                                    \\ \hline
+            1      & Drapeau vert         & La piste est libre                             \\
+            2      & Drapeau jaune        & La piste est partiellement bloquée, la course  \\
+                   &                      & continue, mais les dépassements sont interdit  \\
+                   &                      & dans un ou plusieurs secteurs                  \\
+            4      & Voiture de sécurité  & La course est neutralisée, les voitures ne     \\
+                   &                      & peuvent pas dépasser, réduisent leur vitesse   \\
+                   &                      & et font la queue derrière la voiture de        \\
+                   &                      & sécurité                                       \\
+            5      & Drapeau rouge        & La course est interrompue, toutes les voitures \\
+                   &                      & rentrent au stand                              \\
+            6      & Voiture de sécurité  & La course est neutralisée, les voitures ne     \\
+                   & virtuelle            & peuvent pas dépasser et réduisent leur         \\
+                   &                      & vitesse                                        \\
+            7      & Fin de la voiture de & La voiture de sécurité rentre à la fin de ce   \\
+                   & sécurité             & tour
+        \end{tabular}
+    \end{center}
+\end{table}
+
+Pour l'utiliser, elle a été transformée en 6 features binaires où chaque feature représente la présence d'un statut.
+Les distributions de la variable avant et après la transformation est observable en figure \ref{track_status_plot}.
+\fig[H, width=0.9\textwidth]{\label{track_status_plot}Distribution de la feature TrackStatus avant et après la discrétisation}{track_status_binarized.svg}
+
+6'455 observations avait des valeurs manquantes pour les colonnes DriverAhead et DistanceToDriverAhead. En étudiant la distribution des numéros de tour de ces observations,
+présentés en figure \ref{hist_missing_driver_ahead}, on remarque que la plupart des tours sont les premiers de la course,
+le reste de la distribution est assez uniforme avec une légère diminution de la fréquence après 55 tours, car la majorité des courses durent entre 50 et 60 tours.
+Les premiers tours de courses seront supprimés du dataset.
+
+\fig[H, width=0.9\textwidth]{\label{hist_missing_driver_ahead}Distribution de la feature LapNumber pour les tours avec des valeurs manquantes}{lap_number_without_driver_ahead.svg}
+
+En figure \ref{gap_leader_missing}, on voit que beaucoup d'échantillons n'ont pas de valeurs pour la colonne GapToLeader et en observants la figure \ref{gap_leader_laps}, on remarque que ce sont tous des voitures qui ont au moins un tour de retard.
+Il est difficile et peut intéressant de déterminer l'écart entre une voiture retardataire et le leader, les valeurs manquantes ont donc été remplacées par -1.
+
+\fig[H, width=0.9\textwidth]{\label{gap_leader_missing}Valeurs manquantes de chaque colonne, les observations d'IntervalToPositionAhead nulles sont celles de voiture avec un tour de retard sur tout le peloton, celles avec des valeurs manquantes de DistanceToDriverAhead et DriverAhead sont ceux du pilote en tête.}{null_values_per_column_after_cleaning.svg}
+
+\fig[H, width=0.9\textwidth]{\label{gap_leader_laps}Histogramme de la caractéristique LapsToLeader lorsque GapToLeader est nul}{gap_to_leader_when_laps_to_leader_is_null.svg}
+
+Les features Track et Compound de notre dataset nécessitent un prétraitement avant d'être utilisées dans notre modèle. Nous avons utilisé l'encodage one-hot de la bibliothèque scikit-learn pour effectuer cette transformation.
+L'encodage one-hot est une technique couramment utilisée pour représenter des variables catégorielles sous forme de vecteurs binaires.
+Par exemple pour la feature Track, en utilisant l'encodage one-hot, on crée des variables binaires pour chaque piste, où une variable est définie à 1 si la course a eu lieu sur cette piste et 0 sinon.
+L'utilisation de l'encodage one-hot nous permet de représenter ces caractéristiques catégorielles en évitant d'introduire un ordre ou une relation numérique entre les catégories.
+Pour gérer de manière robuste les nouveaux circuits, le OneHotEncoder à été initialisé avec le paramètre handle unknown='ignore'.
+De cette manière, le OneHotEncoder ignore simplement les catégories inconnues et génère un vecteur de zéros correspondant à cette catégorie.
+
+L'intégralité des étapes de prétraitement sont résumées dans la figure \ref{preprocessing_pipeline}.
+
+\fig[H, width=0.5\textwidth]{\label{preprocessing_pipeline}
+    Pipelines de prétraitement des données, le pipeline de gauche est utilisé pour le modèle de prediction des gommes et celui de droite pour le modèle de prédiction de l'arrêt au stand.
+}{preprocessing_pipeline.svg}
+
+La décision de créer deux modèles différents pour prédire les gommes et les arrêts au stand est un a priori basé sur les résultats de l'étude \cite{app10217805}.
+
+On peut voir en annexe la comparaison de performance entre les deux approches.
+%TODO ajouter la comparaison
