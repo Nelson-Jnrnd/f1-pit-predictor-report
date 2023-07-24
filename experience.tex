@@ -38,7 +38,7 @@ La figure \ref{confusion_diagram} visualise graphiquement ces ensembles pour le 
 
 La balanced accuracy est définie comme la moyenne entre la sensitivité (rappel) et la spécificité :
 $$
-  \frac{\text{spécificité}+\text{sensitivité}}{2}
+    \frac{\text{spécificité}+\text{sensitivité}}{2}
 $$
 La figure \ref{sensitivity_specificity} visualise les ensembles considérés par la spécificité et la sensitivité.
 \fig[H, width=0.4\textwidth]{\label{sensitivity_specificity}Visualisation de la spécificité et de la sensitivité}{sensitivity_specificity.drawio.svg}
@@ -47,7 +47,7 @@ La spécificité est l'équivalent de la sensitivité pour la classe négative, 
 
 Le F1-score est défini comme la moyenne harmonique entre la précision et la sensitivité :
 $$
-  F=2\cdot\frac{\text{précision} \cdot \text{sensitivité}}{\text{précision} + \text{sensitivité}}
+    F=2\cdot\frac{\text{précision} \cdot \text{sensitivité}}{\text{précision} + \text{sensitivité}}
 $$
 La précision indique combien de fois le modèle a correctement prédit la classe positive parmi toutes les prédictions positives faites,
 La figure \ref{precision_recall} montre les ensembles considérés par ses 2 métriques.
@@ -59,16 +59,16 @@ Notre cas est assez similaire à ce cas de figure avec 97\% de cas négatifs, le
 En utilisant l'implémentation GridSearchCV de scikit-learn, nous avons effectué une optimisation du f1 score, les hyperparamètres sont en table \ref{grid_params}.
 
 \begin{table}[H]
-  \begin{center}
-    \caption{\label{grid_params}Paramètres de la recherche GridSearchCV}
-    \begin{tabular}{r|l}
-      hyperparamètre & valeurs                            \\ \hline
-      class weight   & None, balanced, balanced subsample \\
-      n estimator    & 100, 500, 1000, 2000               \\
-      max depth      & 5, 20, None                        \\
-      max features   & sqrt, log2, None                   \\
-    \end{tabular}
-  \end{center}
+    \begin{center}
+        \caption{\label{grid_params}Paramètres de la recherche GridSearchCV}
+        \begin{tabular}{r|l}
+            hyperparamètre & valeurs                            \\ \hline
+            class weight   & None, balanced, balanced subsample \\
+            n estimator    & 100, 500, 1000, 2000               \\
+            max depth      & 5, 20, None                        \\
+            max features   & sqrt, log2, None                   \\
+        \end{tabular}
+    \end{center}
 \end{table}
 
 La table complète des résultats est en annexe \ref{grid_search_results}.
@@ -77,41 +77,41 @@ Le meilleur modèle obtient un f1 score de 0.13 avec les paramètres en table \r
 Ce score est très faible, nous allons étudier les performances du modèle sur le set de validation pour comprendre ce résultat.
 
 \begin{table}[H]
-  \begin{center}
-    \caption{\label{rf_params}Paramètres du meilleur modèle}
-    \begin{tabular}{r|l}
-      hyperparamètre & valeur             \\ \hline
-      class weight   & balanced subsample \\
-      n estimator    & 2000               \\
-      max depth      & 5                  \\
-      max features   & sqrt               \\
-    \end{tabular}
-  \end{center}
+    \begin{center}
+        \caption{\label{rf_params}Paramètres du meilleur modèle}
+        \begin{tabular}{r|l}
+            hyperparamètre & valeur             \\ \hline
+            class weight   & balanced subsample \\
+            n estimator    & 2000               \\
+            max depth      & 5                  \\
+            max features   & sqrt               \\
+        \end{tabular}
+    \end{center}
 \end{table}
 
 Les métriques des résultats sont observables en table \ref{rf_results} et la matrice de confusion en table \ref{rf_matrix}.
 En raison de la nature déséquilibrée de notre classification, on ne peut pas se fier à la métrique d'accuracy.
 
 \begin{table}[H]
-  \begin{center}
-    \caption{\label{rf_matrix}Matrice de confusion de l'entrainement du premier modèle, les colonnes représentent les prédictions et les lignes le ground truth.}
-    \begin{tabular}{r|cc}
-              & Négatif & Positif \\ \hline
-      Négatif & 10470   & 3422    \\
-      Positif & 103     & 281     \\
-    \end{tabular}
-  \end{center}
+    \begin{center}
+        \caption{\label{rf_matrix}Matrice de confusion de l'entrainement du premier modèle, les colonnes représentent les prédictions et les lignes le ground truth.}
+        \begin{tabular}{r|cc}
+                    & Négatif & Positif \\ \hline
+            Négatif & 10470   & 3422    \\
+            Positif & 103     & 281     \\
+        \end{tabular}
+    \end{center}
 \end{table}
 
 \begin{table}[H]
-  \begin{center}
-    \caption{\label{rf_results}Matrice de confusion de l'entrainement du premier modèle, les colonnes représentent les prédictions et les lignes le ground truth.}
-    \begin{tabular}{r|ccc}
-      Classe  & Precision & Recall & F1Score \\ \hline
-      Négatif & 0.99      & 0.75   & 0.86    \\
-      Positif & 0.08      & 0.73   & 0.14    \\
-    \end{tabular}
-  \end{center}
+    \begin{center}
+        \caption{\label{rf_results}Matrice de confusion de l'entrainement du premier modèle, les colonnes représentent les prédictions et les lignes le ground truth.}
+        \begin{tabular}{r|ccc}
+            Classe  & Precision & Recall & F1Score \\ \hline
+            Négatif & 0.99      & 0.75   & 0.86    \\
+            Positif & 0.08      & 0.73   & 0.14    \\
+        \end{tabular}
+    \end{center}
 \end{table}
 
 
@@ -120,10 +120,10 @@ On remarque dans les résultats que le modèle à de la peine à classifier les 
 On peut observer la progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Max Verstappen en figure \ref{barcelona_2023}.
 
 \fig[H, width=0.9\textwidth]{
-  \label{barcelona_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Max Verstappen.
-  Les probabilités sont calculées à chaque tour en utilisant les données du tour précédent.
-  Les lignes verticales rouges indiquent la target du modèle, c'est à dire un tour avant l'arrêt au stand réel.
-  Les bares horizontales en haut de la figure indique le composé de pneu utilisé (rouge = tendre, jaune = médium, gris = dur).
+    \label{barcelona_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Max Verstappen.
+    Les probabilités sont calculées à chaque tour en utilisant les données du tour précédent.
+    Les lignes verticales rouges indiquent la target du modèle, c'est à dire un tour avant l'arrêt au stand réel.
+    Les bares horizontales en haut de la figure indique le composé de pneu utilisé (rouge = tendre, jaune = médium, gris = dur).
 }{predictions_barcelona_verstappen.svg}
 
 Le modèle semble capturer la relation entre les arrêts au stand et les données de course.
@@ -133,8 +133,8 @@ Les probabilités augmentent également plus faiblement pendant le relai sur pne
 Pour étudier le comportement du modèle face au périodes de safety car, on observe la progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez et Logan Sargeant en figure \ref{baku_2023}.
 
 \fig[H, width=0.9\textwidth]{
-  \label{baku_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez et Logan Sargeant.
-  Les zones jaunes indiquent les périodes de drapeau jaune, de safety car ou de virtual safety car.
+    \label{baku_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez et Logan Sargeant.
+    Les zones jaunes indiquent les périodes de drapeau jaune, de safety car ou de virtual safety car.
 }{predictions_baku_perez_sargeant.svg}
 
 La période de drapeau jaune au tour 10 a poussé le modèle à prédire un arrêt au stand pour Sergio Perez.
@@ -151,7 +151,7 @@ Pour confirmer que le modèle utilise correctement les variables pour la décisi
 Random Forest étant un algorithme interprétable, il nous permet de mesurer en figure\ref{feature_importance} l'importance des features dans sa classification.
 L'importance d'une feature est calculée comme la réduction totale de l'entropie normalisée apportée par cette feature.
 \fig[H, width=0.9\textwidth]{
-  \label{feature_importance}Importance des features du modèle de Random Forest entrainé
+    \label{feature_importance}Importance des features du modèle de Random Forest entrainé
 }{feature_importances.svg}
 Les features TyreLife, LapNumber et Stint sont les plus importantes, ce qui est logique.
 Il est assez intéressant de noter que certains circuits comme Spa-Francorchamps, Sochi et Spielberg qui ont une très grande importance.
@@ -168,7 +168,21 @@ Nous allons étudier les décisions prises pendant la course de Max Verstappen �
 
 En figure \ref{lime_13} les résultats de LIME pour le tour 13, où le modèle à décider de s'arrêter.
 \fig[H, width=0.9\textwidth]{
-  \label{lime_13}Résultat de l'algorithme d'explication LIME pour le tour 13 de la course de Max Verstappen à Barcelone en 2023.
+    \label{lime_13}Résultat de l'algorithme d'explication LIME pour le tour 13 de la course de Max Verstappen à Barcelone en 2023.
 }{explanation_barcelona_verstappen_13.svg}
 
 Une seule feature a grandement contribué à la décision d'arrêt au stand, il s'agit de la feature Stint, les autres features Yellow, Compound HARD, SC.
+
+
+\subsection{Séries temporelles}
+
+Les précédentes expériences utilisaient uniquement le dernier tour pour prédire la probabilité d'arrêt au stand.
+Cependant, il sera plus intéressant d'utiliser les données de plusieurs tours car cela permettra de mieux capturer les tendances.
+
+La formulation du problème devient alors une prédiction de séries temporelles.
+On considère alors les données des tours comme une séquence.
+Cette formulation est plus naturelle car les données sont une discrétisation par tour de données de capteurs qui sont des séries temporelles.
+Elles sont enregistrées de façon séquentielle et sont donc naturellement ordonnées et corrélées.
+
+Il faut cependant grouper les données par course et par voiture pour avoir des séquences de données cohérentes.
+On peut observer en figure \ref{time_series_example} la nature séquentielle des données pour un sous ensemble de features.
