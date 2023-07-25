@@ -150,63 +150,31 @@ Les tours avec des informations manquantes ont été exclus.
 Les saisons 2019 à 2022 compris ont étés considérés, l'année 2023 étant en cours au moment de la rédaction de ce projet
 est réservée comme données de test. La base de données contient 87'845 tours de 80 courses et est disponible ici. % TODO link
 
-\section{Exploration des données}
-Dans ce chapitre, nous détaillons les modifications apportées aux données pour les préparer à l'entrainement du modèle.
-Ainsi que les informations que nous avons pu tirer de l'étude du set de données.
-
-\subsection{Analyse}
-
-En faisant analyse de forme, le set de données final possède 84'630 lignes et 22 colonnes dont 11 variables quantitatives et 11 qualitatives, la distribution des types de données est en figure \ref{data_types_distribution}.
-1'600 lignes ont été supprimées, car elles possédaient des valeurs manquantes, soit environ 2\% du dataset.
-\fig[H, width=0.7\textwidth]{\label{data_types_distribution}Distribution des types des features du dataset}{data_types_distribution.svg}
-
-Afin de créer nos deux classes, nous avons utilisé la colonne "PitStatus". Si la valeur de cette colonne est "In Lap", alors la cible "is pitting" est définie comme étant vraie.
-La distribution de nos 2 classes, entre au stand sur ce tour ou pas, est extrêmement déséquilibré.
-Seulement 3\% de cas positifs uniquement, une attention particulière doit donc être accordée à la gestion de ce déséquilibre
-lors de la phase de modélisation afin d'éviter tout biais potentiel.
-
-\begin{table}[H]
-    \begin{center}
-        \caption{Proportion des valeurs de la target is pitting}
-        \begin{tabular}{r|l}
-            Négatif & 0.970318 \\
-            Positif & 0.029682
-        \end{tabular}
-    \end{center}
-\end{table}
-
-Dans la section suivante, nous examinons la distribution des features du jeu de données.
-Seules les plus intéressantes sont présentées ici, les autres seront fournies en annexe \ref{sec:features}.
-
-La distribution en figure \ref{tyreLife_distribution} est unimodal et asymetrique, cela est dû à la nature de l'évolution de l'age des pneumatiques lors de la course.
-Supposons que dans une course de 60 tours on effectue des arrêts tous les 20 tours, on a trois périodes distinctes pour les âges des pneumatiques : 1-20 tours, 21-40 tours et 41-60 tours.
-Chaque valeur de 1 à 20 apparaîtra trois fois dans la colonne TyreLife.
-En revanche, si une voiture ne fait aucun arrêt et parcourt les 60 tours sans changer les pneumatiques, chaque valeur entre 1 et 60 aura seulement un échantillon.
-
-\fig[H, width=0.9\textwidth]{\label{tyreLife_distribution}
-    Distribution de la colonne TyreLife
-}{TyreLife_distribution.svg}
-
-La distribution de la variable Compound est en figure \ref{compound_distribution}.
-On remarque que les pneumatiques les plus utilisés sont les pneumatiques durs et mediums. Les pneumatiques tendres sont utilisés beaucoup moins souvent, car ils sont moins durables.
-Les intermédiaires et les wets sont utilisés beaucoup moins souvent, car ils ne sont utilisés que dans des conditions météorologiques particulières.
-
-\fig[H, width=0.9\textwidth]{\label{compound_distribution}
-    Distribution de la colonne Compound
-}{Compound_distribution.svg}
-
-La figure \ref{track_distribution}, présente la distribution de la variable Track.
-Track représente le circuit sur lequel la course a lieu, la distribution est assez déséquilibrée, car certains circuits sont plus courts que d'autres se qu'il fait que les pilotes effectuent moins de tours sur ces circuits.
-Et d'autre ne sont pas utilisés tous les ans comme le Mugello qui a été utilisé qu'une fois en 2020.
-
-
-\fig[H, width=0.9\textwidth]{\label{track_distribution}
-    Distribution de la colonne Track
-}{Track_distribution.svg}
-
-\subsection{Preprocessing}
+\section{Traitement des données}
 Les données doivent être préparées pour être utilisées dans le modèle. Les données inutilisable doivent être éliminées
 et certaines colonnes doivent être transformées.
+
+L'objectif étant de prédire si un pilote va s'arrêter au stand ou non, la colonne "PitStatus" est utilisée pour créer la variable binaire cible "is_pitting" qui vaut 1 si le pilote s'arrête au stand et 0 sinon.
+"PitStatus" est une colonne catégorielle qui prend 3 valeurs possibles : "In Lap", "Out Lap" et "No Pit".
+"In Lap" signifie que le pilote est entré dans la voie des stands, "Out Lap" signifie qu'il en est sorti et "No Pit" signifie qu'il n'est pas entré dans la voie des stands.
+Pour créer la variable cible, les valeurs "In Lap" sont considérées comme 1 et les autres comme 0.
+Les données étant échantillonnées à chaque passage de la ligne d'arrivée, les informations relatives à un tour "In Lap" sont impactées par le temps passé dans la voie des stands.
+En d'autres termes, les tours "In Lap" et "Out Lap" sont plus longs que les autres tours. Il est impératif donc de décaler la valeur de la variable cible d'un tour vers le haut.
+Ainsi, la valeur de "PitStatus" au tour $n$ correspond au tour d'entrée au stand du tour $n+1$.
+De cette manière quand le modèle effectue une prédiction avec les données du tour $n$, il prédit si le pilote entrera au stand au tour $n+1$.
+Pour ce faire, les tours ont étés regroupés par course en utilisant les champs "DriverNumber", "RoundNumber" et "Year".
+Dans chacun de ces groupes, les tours sont ordonnés par "LapNumber" et les valeurs de "PitStatus" sont décalées d'un tour vers le haut. Pour le dernier tour de course on considère que la voiture n'entrera pas au stand.
+Les tours "In Lap" et "Out Lap" sont ensuite exclus du dataset car ils ne sont pas représentatifs.
+
+On peut observer en figure \ref{LapTime_distribution_pitStatus} l'impact de la transformation de la variable cible sur la distribution des temps de tours.
+
+\fig[H, width=0.7\textwidth]{\label{LapTime_distribution_pitStatus}Distribution des temps de tours en fonction de la variable cible}{LapTime_distribution_pitStatus.svg}
+
+Le deuxième problème est le choix des pneumatiques à utiliser. Les données contiennent le composé de pneu utilisé pour chaque tour via la variable catégorielle "Compound".
+Elle est décalée de 2 tours vers le haut et copiée dans la colonne "NextCompound". Ainsi, la valeur de "NextCompound" au tour $n$ correspond au composé de pneu utilisé au tour $n+2$.
+La raison de ce décalage est que l'on veut décider du composé de pneu à utiliser au moment ou l'on prend la décision d'entrer au stand.
+Étant donnée que les informations du tour sont capturées quand la voiture franchit la ligne d'arrivée,
+le nouveau composé de pneu est connu au moment où la voiture franchit la ligne d'arrivée lors de son tour de sortie des stands.
 
 La gestion de conditions météorologiques changeantent est un problème complexe qui n'est pas abordé dans ce travail.
 Les courses sous la pluie sont donc exclues du dataset. Pour ce faire, les tours ont étés regroupés par course en utilisant les champs "DriverNumber", "RoundNumber" et "Year".
@@ -220,18 +188,6 @@ Cette marge de 3 tours est ajoutée pour considérer les voitures qui abandonnen
 Dans d'autres cas, différentes situations peuvent amener des voitures à effectuer des arrêts au stands supplémentaires (pénalité, dégâts, etc.).
 Ces arrêts supplémentaires peuvent fausser la prédiction de la stratégie. Nous avons donc décidé de ne pas les considérer.
 Les tours ont étés regroupés par course comme précédemment et les courses avec plus de 3 arrêts ont étés exclues.
-
-Les colonnes cibles sont "PitStatus" et "Compound". "PitStatus" est une colonne catégorielle qui indique si la voiture est entrée au stand au cours du tour.
-"Compound" est une colonne catégorielle qui indique le composé de pneu utilisé au cours du tour.
-L'objectif étant de prédire le tour d'entrée au stand,  la variable "PitStatus" est transformée en une variable binaire qui indique si la voiture est entrée au stand au cours du tour.
-Ensuite, les valeurs de "PitStatus" sont décalées d'un tour vers le haut après avoir groupés les tours en courses. Pour le dernier tour de course on considère que la voiture n'entrera pas au stand.
-Ainsi, la valeur de "PitStatus" au tour $n$ correspond au tour d'entrée au stand du tour $n+1$.
-De cette manière quand le modèle effectue une prédiction avec les données du tour $n$, il prédit si le pilote entrera au stand au tour $n+1$.
-
-La variable "Compound" est elle décalée de 2 tours vers le haut et copiée dans la colonne "NextCompound". Ainsi, la valeur de "NextCompound" au tour $n$ correspond au composé de pneu utilisé au tour $n+2$.
-La raison de ce décalage est que l'on veut décider du composé de pneu à utiliser au moment ou l'on prend la décision d'entrer au stand.
-Étant donnée que les informations du tour sont capturées quand la voiture franchit la ligne d'arrivée,
-le nouveau composé de pneu est connu au moment où la voiture franchit la ligne d'arrivée lors de son tour de sortie des stands.
 
 Pour éviter de biaiser le modèle avec des informations comme l'identité du pilote ou de l'écurie, les tours ont étés anonymisés en supprimant les colonnes "DriverNumber" et "Team".
 En effet, les performances des pilotes et des écuries varient d'une saison à l'autre et il ne faut pas que le modèle apprenne à prédire la stratégie en fonction de ces informations.
@@ -266,10 +222,13 @@ Pour l'utiliser, elle a été transformée en 6 features binaires où chaque fea
 Les distributions de la variable avant et après la transformation est observable en figure \ref{track_status_plot}.
 \fig[H, width=0.9\textwidth]{\label{track_status_plot}Distribution de la feature TrackStatus avant et après la discrétisation}{track_status_binarized.svg}
 
-6'455 observations avait des valeurs manquantes pour les colonnes DriverAhead et DistanceToDriverAhead. En étudiant la distribution des numéros de tour de ces observations,
-présentés en figure \ref{hist_missing_driver_ahead}, on remarque que la plupart des tours sont les premiers de la course,
-le reste de la distribution est assez uniforme avec une légère diminution de la fréquence après 55 tours, car la majorité des courses durent entre 50 et 60 tours.
-Les premiers tours de courses seront supprimés du dataset.
+6'455 observations avait des valeurs manquantes pour les colonnes DriverAhead et DistanceToDriverAhead.
+Il est logique que ces valeurs soient manquantes pour les tours de la voiture en tête de course.
+Cependant, en étudiant la distribution des numéros de tour de ces observations,
+présentés en figure \ref{hist_missing_driver_ahead}, on remarque que la plupart des tours sont les premiers de la course.
+Il n'est pas clair pourquoi ces valeurs sont manquantes, mais il est possible que ce soit un problème de la capture des données.
+Les premiers tours de la course sont donc exclus du dataset, ce qui ne pose pas de problème car il est très rare d'avoir des arrêts au stand dans les premiers tours.
+Le reste de la distribution est assez uniforme avec une légère diminution de la fréquence après 55 tours, car la majorité des courses durent entre 50 et 60 tours.
 
 \fig[H, width=0.9\textwidth]{\label{hist_missing_driver_ahead}Distribution de la feature LapNumber pour les tours avec des valeurs manquantes}{lap_number_without_driver_ahead.svg}
 
@@ -288,12 +247,59 @@ Pour gérer de manière robuste les nouveaux circuits, le OneHotEncoder à été
 De cette manière, le OneHotEncoder ignore simplement les catégories inconnues et génère un vecteur de zéros correspondant à cette catégorie.
 
 L'intégralité des étapes de prétraitement sont résumées dans la figure \ref{preprocessing_pipeline}.
-
+%TODO modifier le graphique pour qu'il soit joli
 \fig[H, width=0.5\textwidth]{\label{preprocessing_pipeline}
     Pipelines de prétraitement des données, le pipeline de gauche est utilisé pour le modèle de prediction des gommes et celui de droite pour le modèle de prédiction de l'arrêt au stand.
 }{preprocessing_pipeline.svg}
 
-La décision de créer deux modèles différents pour prédire les gommes et les arrêts au stand est un a priori basé sur les résultats de l'étude \cite{app10217805}.
+\section{Exploration des données}
+%TODO modifier le nombre de colonnes
+En faisant analyse de forme, le set de données final possède 84'630 lignes et 22 colonnes dont 11 variables quantitatives et 11 qualitatives, la distribution des types de données est en figure \ref{data_types_distribution}.
+1'600 lignes ont été supprimées, car elles possédaient des valeurs manquantes, soit environ 2\% du dataset.
+\fig[H, width=0.7\textwidth]{\label{data_types_distribution}Distribution des types des features du dataset}{data_types_distribution.svg}
 
-On peut voir en annexe la comparaison de performance entre les deux approches.
-%TODO ajouter la comparaison
+La première variable cible étudiée est "is_pitting". Les voitures ne rentrant en moyenne qu'une à trois fois au stand par course, la distribution de cette variable est très déséquilibrée.
+Seulement 3\% de cas positifs uniquement, une attention particulière doit donc être accordée à la gestion de ce déséquilibre
+lors de la phase de modélisation afin d'éviter tout biais potentiel.
+
+\begin{table}[H]
+    \begin{center}
+        \caption{Proportion des valeurs de la target is pitting}
+        \begin{tabular}{r|l}
+            Négatif & 0.970318 \\
+            Positif & 0.029682
+        \end{tabular}
+    \end{center}
+\end{table}
+
+La distribution de la variable Compound est en figure \ref{compound_distribution}.
+On remarque que les pneumatiques les plus utilisés sont les pneumatiques durs et mediums.
+Les pneumatiques tendres sont moins représentés, étant moins durable les voitures effectuent moins de tours avec.
+Les intermédiaires et les wets sont utilisés beaucoup moins souvent, car ils ne sont utilisés que dans des conditions météorologiques particulières.
+Ils ne seront pas présent dans le dataset final, car les courses avec des conditions météorologiques particulières ont été supprimées.
+
+\fig[H, width=0.9\textwidth]{\label{compound_distribution}
+    Distribution de la colonne Compound
+}{Compound_distribution.svg}
+
+Dans la section suivante, nous examinons la distribution des features du jeu de données.
+Seules les plus intéressantes sont présentées ici, les autres seront fournies en annexe \ref{sec:features}.
+
+La distribution en figure \ref{tyreLife_distribution} est unimodal et asymetrique, cela est dû à la nature de l'évolution de l'age des pneumatiques lors de la course.
+Supposons que dans une course de 60 tours on effectue des arrêts tous les 20 tours, on a trois périodes distinctes pour les âges des pneumatiques : 1-20 tours, 21-40 tours et 41-60 tours.
+Chaque valeur de 1 à 20 apparaîtra trois fois dans la colonne TyreLife.
+En revanche, si une voiture ne fait aucun arrêt et parcourt les 60 tours sans changer les pneumatiques, chaque valeur entre 1 et 60 aura seulement un échantillon.
+
+\fig[H, width=0.9\textwidth]{\label{tyreLife_distribution}
+    Distribution de la colonne TyreLife
+}{TyreLife_distribution.svg}
+
+
+La figure \ref{track_distribution}, présente la distribution de la variable Track.
+Track représente le circuit sur lequel la course a lieu, la distribution est assez déséquilibrée, car certains circuits sont plus courts que d'autres se qu'il fait que les pilotes effectuent moins de tours sur ces circuits.
+Et d'autre ne sont pas utilisés tous les ans comme le Mugello qui a été utilisé qu'une fois en 2020.
+
+
+\fig[H, width=0.9\textwidth]{\label{track_distribution}
+    Distribution de la colonne Track
+}{Track_distribution.svg}
