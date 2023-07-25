@@ -132,7 +132,6 @@ En raison de la nature déséquilibrée de notre classification, on ne peut pas 
     \end{center}
 \end{table}
 
-
 On remarque dans les résultats que le modèle à de la peine à classifier les cas positifs avec beaucoup de faux-positifs.
 
 On peut observer la progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Max Verstappen en figure \ref{barcelona_2023}.
@@ -166,7 +165,7 @@ On peut également noter que la période de safety car ne provoque pas de prédi
 Le modèle capture donc l'importance de l'arrêt au stand pendant une période d'arrêt mais uniquement si un arrêt au stand est nécessaire.
 
 Pour confirmer que le modèle utilise correctement les variables pour la décision nous étudions les raisons derrière ses décisions avec des méthodes d'explications.
-Random Forest étant un algorithme interprétable, il nous permet de mesurer en figure\ref{feature_importance} l'importance des features dans sa classification.
+Random Forest étant un algorithme interprétable, il nous permet de mesurer en figure \ref{feature_importance} l'importance des features dans sa classification.
 L'importance d'une feature est calculée comme la réduction totale de l'entropie normalisée apportée par cette feature.
 \fig[H, width=0.9\textwidth]{
     \label{feature_importance}Importance des features du modèle de Random Forest entrainé
@@ -184,13 +183,25 @@ Pour mieux comprendre les décisions nous allons utilisons LIME, un algorithme d
 
 Nous allons étudier les décisions prises pendant la course de Max Verstappen à Barcelone en 2023 \ref{barcelona_2023}
 
-En figure \ref{lime_13} les résultats de LIME pour le tour 13, où le modèle à décider de s'arrêter.
+Premièrement, on peut observer en figure \ref{lime_2} les résultats de LIME pour le tour 2, où le modèle à décidé de ne pas s'arrêter.
+\fig[H, width=0.9\textwidth]{
+    \label{lime_2}Résultat de l'algorithme d'explication LIME pour le tour 2 de la course de Max Verstappen à Barcelone en 2023.
+}{explanation_barcelona_verstappen_2.svg}
+
+On peut voir que l'age des pneus faible est la raison principale de la décision. En figure \ref{lime_13} les résultats de LIME pour le tour 13, le premier tour où le modèle décide de s'arrêter.
 \fig[H, width=0.9\textwidth]{
     \label{lime_13}Résultat de l'algorithme d'explication LIME pour le tour 13 de la course de Max Verstappen à Barcelone en 2023.
 }{explanation_barcelona_verstappen_13.svg}
 
-Une seule feature a grandement contribué à la décision d'arrêt au stand, il s'agit de la feature Stint, les autres features Yellow, Compound HARD, SC.
+L'age des pneus a augmenté et sont impact négatif sur la décision est plus faible. L'absence de pneumatique dur et le fait que la voiture soit dans son
+premier relai sont les raisons principales de la décision. En figure \ref{lime_20} les résultats de LIME pour le tour 28, le premier tour après l'arrêt au stand.
+\fig[H, width=0.9\textwidth]{
+    \label{lime_28}Résultat de l'algorithme d'explication LIME pour le tour 28 de la course de Max Verstappen à Barcelone en 2023.
+}{explanation_barcelona_verstappen_28.svg}
+La prédiction est redevenue négative car l'age des pneus est de nouveau faible. De plus, on peut observer l'impact négatif sur la prédiction du second relai.
+Le modèle a appris que les voitures font au moins deux relais il est donc normal que le second relai ait un impact négatif sur la prédiction.
 
+Dans l'ensemble, les features utilisées par le modèle sont cohérentes avec nos connaissances sur la stratégie de course.
 
 \subsection{Séries temporelles}
 
