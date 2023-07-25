@@ -5,23 +5,42 @@ pour estimer le temps gagné dans les différents scénarios hypothètiques.
 En revanche l'inconvénient de cette méthode est que les modèles ne peuvent pas surpasser les performances des stratégistes étant donnée qu'ils tentent de les copier.
 Il est estimé que cela n'est pas un problème dans la mesure où les stratégies employées sont bonnes en moyenne.
 
-La première modélisation explorée est celle d'une classification binaire
-où le modèle considère les informations d'un seul tour de course en entrée et détermine en sortie si la voiture s'arrête ou non à la fin de celui-ci.
-
-Le modèle est entrainé sur les années 2019 à 2022, en réservant l'année 2023 comme set de validation afin d'évaluer la capacité du modèle à généraliser
+\section{Préparation des données}
+Les modèles sont entrainés sur les années 2019 à 2022, en réservant l'année 2023 comme set de test afin d'évaluer la capacité du modèle à généraliser
 sur des données qui ne sont pas inclus dans le set d'entrainement.
-Étant donné la quantité importante de données, nous avons choisi d'effectuer une division du dataset en un jeu d'entraînement et un jeu de test avec un ratio de 0,2.
+Étant donné la quantité importante de données, nous avons choisi d'effectuer une division du dataset en un jeu d'entraînement et un jeu de validation avec un ratio de 0,2.
 
 Les étapes de preprocessing ont ensuite été appliquée sur les sets de données individuellement afin d'éviter le data leakage.
-Ce phénomène se produit lorsqu'une information provenant du set de test ou de validation est incorporée dans le processus d'entraînement du modèle,
+Ce phénomène se produit lorsque des informations provenant du set de test ou de validation sont incorporées dans le processus d'entraînement du modèle,
 ce qui fausse les résultats de l'évaluation et conduit à une estimation optimiste des performances du modèle.
 
+\section{Modélisation}
+L'objectif étant de déterminer la stratégie d'une voiture, le problème comporte 2 parties :
+\begin{itemize}
+    \item La première est de déterminer si la voiture s'arrête ou non.
+    \item La seconde est de déterminer les pneus à utiliser si la voiture s'arrête.
+\end{itemize}
+On peut donc modéliser le problème comme une classification binaire suivie d'une classification multi-classes,
+où la première détermine si la voiture s'arrête ou non et la seconde détermine les pneus à utiliser si la voiture s'arrête.
+Une autre modélisation possible est de considérer les 2 parties comme un problème de classification multi-classes,
+où le modèle détermine directement les pneus à utiliser et la classe "ne s'arrête pas" est considérée comme une classe à part entière.
+Une dernière modélisation possible est de considérer les 2 parties comme 2 sorties indépendantes d'un même modèle si l'algorithme utilisé le permet.
+Les 3 modélisations sont illustrées par la figure \ref{modelisations}.
+%TODO : ajouter un schéma pour chaque modélisation
+
+Les modélisations basées sur des modèles de régression sont aussi possibles mais elles ne sont pas considérées car selon l'étude de l'état de l'art
+\cite{app10217805} les modèles de classification sont plus performants.
+
+Dans les prochaines sections nous allons détailler les modélisations explorées et les résultats obtenus.
+\section{Classification binaire pour la décision d'arrêt}
+\subsection{Random Forest}
+%La première modélisation explorée est celle d'une classification binaire
+%où le modèle considère les informations d'un seul tour de course en entrée et détermine en sortie si la voiture s'arrête ou non à la fin de celui-ci.
 Le premier algorithme de classification utilisé est Random Forest, c'est un algorithme d'ensemble qui combine plusieurs arbres de décision.
 Il a été choisit car il est performant sur des sets de données déséquilibrés avec mécanisme de pondération des classes et qu'il est interprétable.
 L'interprétabilité est un critère important car il permet de comprendre les décisions prises par le modèle se qui vas dans un premier temps nous aider à l'améliorer
 et dans un second temps à donner confiance aux utilisateurs du modèle.
 
-\subsection{Random Forest}
 L'implémentation utilisée est celle de scikit-learn \cite{scikitLearnRandomForest} qui est une librairie open-source de machine learning pour python.
 Les hyperparamètres du modèle ont été choisis après une recherche par grid search avec une validation croisée sur 4 folds.
 
@@ -29,7 +48,6 @@ Grid search est une méthode d'optimisation des hyperparamètres dans laquelle u
 Il est donc important de définir une métrique pour estimer la qualité des modèles entrainés.
 \subsubsection{Métriques}
 Étant donnés, notre set de données très déséquilibré, nous n'allons pas utiliser l'accuracy ou le score ROC AUC car ils ne sont pas adaptés.
-
 Le choix repose entre le F1-score et la balanced accuracy qui sont les 2 métriques les plus communement utilisées pour les sets de données déséquilibrées.
 
 Pour décider quelle métrique favoriser on s'attarde sur leur définition respective à partir des ensembles des classes prédites.

@@ -154,7 +154,7 @@ est réservée comme données de test. La base de données contient 87'845 tours
 Les données doivent être préparées pour être utilisées dans le modèle. Les données inutilisable doivent être éliminées
 et certaines colonnes doivent être transformées.
 
-L'objectif étant de prédire si un pilote va s'arrêter au stand ou non, la colonne "PitStatus" est utilisée pour créer la variable binaire cible "is_pitting" qui vaut 1 si le pilote s'arrête au stand et 0 sinon.
+L'objectif étant de prédire si un pilote va s'arrêter au stand ou non, la colonne PitStatus est utilisée pour créer la variable binaire cible is\_pitting qui vaut 1 si le pilote s'arrête au stand et 0 sinon.
 "PitStatus" est une colonne catégorielle qui prend 3 valeurs possibles : "In Lap", "Out Lap" et "No Pit".
 "In Lap" signifie que le pilote est entré dans la voie des stands, "Out Lap" signifie qu'il en est sorti et "No Pit" signifie qu'il n'est pas entré dans la voie des stands.
 Pour créer la variable cible, les valeurs "In Lap" sont considérées comme 1 et les autres comme 0.
@@ -166,11 +166,14 @@ Pour ce faire, les tours ont étés regroupés par course en utilisant les champ
 Dans chacun de ces groupes, les tours sont ordonnés par "LapNumber" et les valeurs de "PitStatus" sont décalées d'un tour vers le haut. Pour le dernier tour de course on considère que la voiture n'entrera pas au stand.
 Les tours "In Lap" et "Out Lap" sont ensuite exclus du dataset car ils ne sont pas représentatifs.
 
-On peut observer en figure \ref{LapTime_distribution_pitStatus} l'impact de la transformation de la variable cible sur la distribution des temps de tours.
+On peut observer en figure \ref{LapTime_distribution_pitStatus} l'impact de la transformation de la variable cible sur le temps des tours.
 
-\fig[H, width=0.7\textwidth]{\label{LapTime_distribution_pitStatus}Distribution des temps de tours en fonction de la variable cible}{LapTime_distribution_pitStatus.svg}
+\fig[H, width=0.7\textwidth]{
+    \label{LapTime_distribution_pitStatus}Distribution de la différence de temps entre les tours et la médiane des tours de la course en fonction de la variable cible.
+}{LapTime_distribution_pitStatus.svg}
 
-Le deuxième problème est le choix des pneumatiques à utiliser. Les données contiennent le composé de pneu utilisé pour chaque tour via la variable catégorielle "Compound".
+Le deuxième problème est le choix des pneumatiques à utiliser.
+Les données contiennent le composé de pneu utilisé pour chaque tour via la variable catégorielle "Compound".
 Elle est décalée de 2 tours vers le haut et copiée dans la colonne "NextCompound". Ainsi, la valeur de "NextCompound" au tour $n$ correspond au composé de pneu utilisé au tour $n+2$.
 La raison de ce décalage est que l'on veut décider du composé de pneu à utiliser au moment ou l'on prend la décision d'entrer au stand.
 Étant donnée que les informations du tour sont capturées quand la voiture franchit la ligne d'arrivée,
@@ -258,8 +261,8 @@ En faisant analyse de forme, le set de données final possède 84'630 lignes et 
 1'600 lignes ont été supprimées, car elles possédaient des valeurs manquantes, soit environ 2\% du dataset.
 \fig[H, width=0.7\textwidth]{\label{data_types_distribution}Distribution des types des features du dataset}{data_types_distribution.svg}
 
-La première variable cible étudiée est "is_pitting". Les voitures ne rentrant en moyenne qu'une à trois fois au stand par course, la distribution de cette variable est très déséquilibrée.
-Seulement 3\% de cas positifs uniquement, une attention particulière doit donc être accordée à la gestion de ce déséquilibre
+La première variable cible étudiée est is\_pitting. Les voitures ne rentrant en moyenne qu'une à trois fois au stand par course, la distribution de cette variable est très déséquilibrée.
+Seulement 3\% de cas positifs, une attention particulière doit donc être accordée à la gestion de ce déséquilibre
 lors de la phase de modélisation afin d'éviter tout biais potentiel.
 
 \begin{table}[H]
