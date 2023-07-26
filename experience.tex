@@ -134,74 +134,90 @@ En raison de la nature déséquilibrée de notre classification, on ne peut pas 
 
 On remarque dans les résultats que le modèle à de la peine à classifier les cas positifs avec beaucoup de faux-positifs.
 
-On peut observer la progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Max Verstappen en figure \ref{barcelona_2023}.
+\subsubsection{Analyse des résultats}
+Premièrement, pour confirmer que le modèle utilise correctement les variables pour la décision nous étudions les raisons derrière ses décisions avec des méthodes d'explications.
 
+Random Forest étant un algorithme interprétable, il nous permet de mesurer en figure \ref{feature_importance_rf_pit} l'importance des features dans sa classification.
+L'importance d'une feature est calculée comme la réduction totale de l'entropie normalisée apportée par cette feature.
 \fig[H, width=0.9\textwidth]{
-    \label{barcelona_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Max Verstappen.
+    \label{feature_importance_rf_pit}Importance des features du modèle de Random Forest pour la classification des arrêts au stand.
+}{feature_importance_rf_pit.svg}
+
+Les features TyreLife, LapNumber et Stint sont les plus importantes. Ce qui est cohérent avec nos connaissances sur la stratégie de course.
+Les features les moins utilisées sont celles liées au circuit, nous supposons que c'est parce que la feature est one-hot encoded se qui crée une grande matrice creuse
+les features individuelles apporte donc peu d'information au modèle.
+
+Pour comprendre les résultats, nous allons analyser les prédictions du modèle sur le set de validation.
+Random Forest est un algorithme interprétable localement de lui même mais le grand nombre d'arbre dans notre modèle rend cela plus difficile.
+Nous utilisons LIME (Local Interpretable Model-agnostic Explanations) \cite{lime} un outil d'explication locale,
+c'est à dire qu'il permet d'expliquer les prédictions pour une instance donnée.
+Pour ce faire LIME fonctionne de la manière suivante:
+\begin{enumerate}
+    \item On génère un ensemble de données autour de l'instance à expliquer en perturbant légerement les features.
+    \item On prédit la classe de l'ensemble de données généré avec le modèle.
+    \item On entraine un modèle explicable avec comme features l'ensemble de données généré et comme labels les prédictions du modèle. LIME attribue un poids à chaque instance de l'ensemble de données généré en fonction de la distance avec l'instance à expliquer. Les instances les plus proches sont plus importantes car elles sont plus représentatives de l'instance que l'on cherche à expliquer.
+\end{enumerate}
+
+Nous allons étudier les décisions prises pendant la course de Lance Stroll au Grand Prix d'Espagne 2023,
+on peut observer la progression  des probabilités d'arrêt au stand en figure \ref{stroll_barcelona_2023}.
+\fig[H, width=0.9\textwidth]{
+    \label{stroll_barcelona_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Espagne 2023 de Lance Stroll.
     Les probabilités sont calculées à chaque tour en utilisant les données du tour précédent.
     Les lignes verticales rouges indiquent la target du modèle, c'est à dire un tour avant l'arrêt au stand réel.
     Les bares horizontales en haut de la figure indique le composé de pneu utilisé (rouge = tendre, jaune = médium, gris = dur).
-}{predictions_barcelona_verstappen.svg}
+}{barcelona_2023_lance_stroll.svg}
 
 Le modèle semble capturer la relation entre les arrêts au stand et les données de course.
 Les probabilités d'arrêt au stand augmentent à chaque tour et diminuent drastitquement après un arrêt au stand réel.
 Les probabilités augmentent également plus faiblement pendant le relai sur pneus durs se qui est cohérent avec la dégradation plus faible de ces pneus.
+Cependant le modèle ne semble pas pouvoir augmenter la probabilité d'arrêt au stand assez rapidement pour éviter les faux positifs, cela explique les résultats de la matrice de confusion.
+Ces résultats sont cohérents avec les observations de l'étude \cite{app10217805}.
 
-Pour étudier le comportement du modèle face au périodes de safety car, on observe la progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez et Logan Sargeant en figure \ref{baku_2023}.
+Nous allons maintenant étudier les explications de LIME pour les tours 2, 8 et 16 de cette course.
+Premièrement, on peut observer en figure \ref{lime_2} les résultats de LIME pour le tour 2, où le modèle à décidé de ne pas s'arrêter.
+\fig[H, width=0.9\textwidth]{
+    \label{lime_2}Résultat de l'algorithme d'explication LIME pour le tour 2 de la course de Lance Stroll à Barcelone en 2023.
+}{explanation_barcelona_stroll_2.svg}
+
+On peut voir que l'age des pneus faible est la raison principale de la décision. En figure \ref{lime_8} les résultats de LIME pour le tour 8, le premier tour où le modèle décide de s'arrêter.
+\fig[H, width=0.9\textwidth]{
+    \label{lime_8}Résultat de l'algorithme d'explication LIME pour le tour 8 de la course de Lance Stroll à Barcelone en 2023.
+}{explanation_barcelona_stroll_8.svg}
+
+L'age des pneus a augmenté et sont impact négatif sur la décision est plus faible. L'absence de pneumatique dur et le fait que la voiture soit dans son
+premier relai sont les raisons principales de la décision. En figure \ref{lime_16} les résultats de LIME pour le tour 16, le premier tour après l'arrêt au stand.
+\fig[H, width=0.9\textwidth]{
+    \label{lime_16}Résultat de l'algorithme d'explication LIME pour le tour 16 de la course de Lance Stroll à Barcelone en 2023.
+}{explanation_barcelona_stroll_16.svg}
+La prédiction est redevenue négative car l'age des pneus est de nouveau faible. De plus, on peut observer l'impact négatif sur la prédiction du second relai.
+Le modèle a appris que les voitures font au moins deux relais il est donc normal que le second relai ait un impact négatif sur la prédiction.
+Dans l'ensemble, les features utilisées par le modèle sont cohérentes avec nos connaissances sur la stratégie de course.
+
+Pour étudier le comportement du modèle face au périodes de safety car, on observe la progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez en figure \ref{baku_2023}.
 
 \fig[H, width=0.9\textwidth]{
-    \label{baku_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez et Logan Sargeant.
+    \label{baku_2023}Progression des probabilités d'arrêt au stand pour le Grand Prix d'Azerbaïdjan 2023 de Sergio Perez.
     Les zones jaunes indiquent les périodes de drapeau jaune, de safety car ou de virtual safety car.
-}{predictions_baku_perez_sargeant.svg}
+}{baku_2023_sergio_perez.svg}
 
 La période de drapeau jaune au tour 10 a poussé le modèle à prédire un arrêt au stand pour Sergio Perez.
 Ce qui est cohérent avec la stratégie de course de l'équipe Red Bull qui a effectué un arrêt au stand pour Sergio Perez au tour 11.
-Cependant la période de drapeau jaune au tour 48 a également poussé le modèle à prédire un arrêt au stand alors qu'il n'y en a pas eu.
+En figure \ref{lime_baku_10} on peut observer les résultats de LIME pour le tour 10, le drapeau jaune est la raison principale de la décision.
+\fig[H, width=0.9\textwidth]{
+    \label{lime_baku_10}Résultat de l'algorithme d'explication LIME pour le tour 10 de la course de Sergio Perez à Bakou en 2023.
+}{explanation_baku_10.svg}
+
+Cependant la période de drapeau jaune au tour 49 a également poussé le modèle à prédire un arrêt au stand alors qu'il n'y en a pas eu.
 Cela est dû à un manque d'information sur la raison du drapeau jaune. La première période de drapeau jaune est due à un accident et donc est fortement suseptible d'entrainer une voiture de sécurité.
 Alors que la deuxième période de drapeau jaune est due à une sortie de piste sans conséquence et donc n'entraine pas de voiture de sécurité.
 Ces information ne sont pas disponibles dans les données car elles sont observables uniquement en regardant les images de la course.
-
-On peut également noter que la période de safety car ne provoque pas de prédiction d'arrêt au stand pour Logan Sargeant qui s'était déjà arrêté au tour 8.
-Le modèle capture donc l'importance de l'arrêt au stand pendant une période d'arrêt mais uniquement si un arrêt au stand est nécessaire.
-
-Pour confirmer que le modèle utilise correctement les variables pour la décision nous étudions les raisons derrière ses décisions avec des méthodes d'explications.
-Random Forest étant un algorithme interprétable, il nous permet de mesurer en figure \ref{feature_importance} l'importance des features dans sa classification.
-L'importance d'une feature est calculée comme la réduction totale de l'entropie normalisée apportée par cette feature.
+En figure \ref{lime_baku_49} on peut voir que le drapeau jaune est encore une fois la cause de la décision.
 \fig[H, width=0.9\textwidth]{
-    \label{feature_importance}Importance des features du modèle de Random Forest entrainé
-}{feature_importances.svg}
-Les features TyreLife, LapNumber et Stint sont les plus importantes, ce qui est logique.
-Il est assez intéressant de noter que certains circuits comme Spa-Francorchamps, Sochi et Spielberg qui ont une très grande importance.
-Spa est le circuit le plus long et qui possède donc le moins de tours et inversément Spielberg est le circuit le plus court avec un plus grand nombre de tour par course.
-Peut-être que le modèle utilise cette variable comme proxy à la variable TotalLaps.
+    \label{lime_baku_49}Résultat de l'algorithme d'explication LIME pour le tour 49 de la course de Sergio Perez à Bakou en 2023.
+}{explanation_baku_49.svg}
 
-En revanche, les features Compound SOFT, Compound MEDIUM et Compound HARD sont peu importantes.
-C'est assez surprenant car à première vue ces features sont très importantes pour la décision d'arrêt au stand.
+\subsection{Réseaux de neurones}
 
-Random Forest est un algorithme interprétable localement de lui même mais le grand nombre d'arbre dans notre modèle rend cela plus difficile.
-Pour mieux comprendre les décisions nous allons utilisons LIME, un algorithme d'explication locale qui construi un modèle explicable qui approxime le comportement du modèle dans une region précise de l'espace de décision.
-
-Nous allons étudier les décisions prises pendant la course de Max Verstappen à Barcelone en 2023 \ref{barcelona_2023}
-
-Premièrement, on peut observer en figure \ref{lime_2} les résultats de LIME pour le tour 2, où le modèle à décidé de ne pas s'arrêter.
-\fig[H, width=0.9\textwidth]{
-    \label{lime_2}Résultat de l'algorithme d'explication LIME pour le tour 2 de la course de Max Verstappen à Barcelone en 2023.
-}{explanation_barcelona_verstappen_2.svg}
-
-On peut voir que l'age des pneus faible est la raison principale de la décision. En figure \ref{lime_13} les résultats de LIME pour le tour 13, le premier tour où le modèle décide de s'arrêter.
-\fig[H, width=0.9\textwidth]{
-    \label{lime_13}Résultat de l'algorithme d'explication LIME pour le tour 13 de la course de Max Verstappen à Barcelone en 2023.
-}{explanation_barcelona_verstappen_13.svg}
-
-L'age des pneus a augmenté et sont impact négatif sur la décision est plus faible. L'absence de pneumatique dur et le fait que la voiture soit dans son
-premier relai sont les raisons principales de la décision. En figure \ref{lime_20} les résultats de LIME pour le tour 28, le premier tour après l'arrêt au stand.
-\fig[H, width=0.9\textwidth]{
-    \label{lime_28}Résultat de l'algorithme d'explication LIME pour le tour 28 de la course de Max Verstappen à Barcelone en 2023.
-}{explanation_barcelona_verstappen_28.svg}
-La prédiction est redevenue négative car l'age des pneus est de nouveau faible. De plus, on peut observer l'impact négatif sur la prédiction du second relai.
-Le modèle a appris que les voitures font au moins deux relais il est donc normal que le second relai ait un impact négatif sur la prédiction.
-
-Dans l'ensemble, les features utilisées par le modèle sont cohérentes avec nos connaissances sur la stratégie de course.
 
 \subsection{Séries temporelles}
 
