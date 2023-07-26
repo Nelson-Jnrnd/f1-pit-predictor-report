@@ -22,7 +22,7 @@ L'objectif étant de déterminer la stratégie d'une voiture, le problème compo
 \end{itemize}
 On peut donc modéliser le problème comme une classification binaire suivie d'une classification multi-classes,
 où la première détermine si la voiture s'arrête ou non et la seconde détermine les pneus à utiliser si la voiture s'arrête.
-Une autre modélisation possible est de considérer les 2 parties comme un problème de classification multi-classes,
+Une autre modélisation possible est de considérer les 2 parties comme un seul problème de classification multi-classes,
 où le modèle détermine directement les pneus à utiliser et la classe "ne s'arrête pas" est considérée comme une classe à part entière.
 Une dernière modélisation possible est de considérer les 2 parties comme 2 sorties indépendantes d'un même modèle si l'algorithme utilisé le permet.
 Les 3 modélisations sont illustrées par la figure \ref{modelisations}.
@@ -217,10 +217,94 @@ En figure \ref{lime_baku_49} on peut voir que le drapeau jaune est encore une fo
 }{explanation_baku_49.svg}
 
 \subsection{Réseaux de neurones}
+Les réseaux de neurones sont des modèles plus puissant que Random Forest. Nous allons donc les tester sur le problème de prédiction d'arrêt au stand
+pour voir si ils sont capables d'obtenir de meilleurs résultats. Pour ce faire nous avons utilisé la libraire Keras \cite{chollet2015keras} qui permet de construire des réseaux de neurones en Python.
+Nous avons testés plusieurs architectures de réseaux de neurones et nous avons obtenu les meilleurs résultats avec l'architecture suivante \ref{neural_network_architecture} :
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{|c|c|c|}
+            Couche             & Nombre de neurones & Fonction d'activation \\
+            \hline
+            Couche d'entrée    & 64                 & ReLU                  \\
+            1ère couche cachée & 64                 & ReLU                  \\
+            Dropout            & 0.2                & -                     \\
+            2ème couche cachée & 64                 & ReLU                  \\
+            Dropout            & 0.2                & -                     \\
+            3ème couche cachée & 64                 & ReLU                  \\
+            Dropout            & 0.2                & -                     \\
+            Couche de sortie   & 1                  & Sigmoid               \\
+        \end{tabular}
+    \end{center}
+    \caption{Architecture du réseau de neurones utilisé pour la prédiction d'arrêt au stand.}
+    \label{neural_network_architecture}
+\end{table}
 
+Les couches Dropout sont des couches qui désactivent aléatoirement un certain pourcentage de neurones à chaque itération.
+Le réseau de neurones est donc obligé de s'adapter à l'absence de certains neurones et ne peut pas se reposer sur un seul neurone.
+Cela nous permet de réduire l'overfitting du modèle et d'améliorer sa capacité de généralisation.
+Nous avons également utilisé la technique de Early Stopping qui permet d'arrêter l'entrainement du modèle si la performance sur le jeu de validation ne s'améliore plus.
+Nous avons choisi une batch size assez grande de 256 pour s'asssurer que chaque batch contiennent des arrêts au stand.
+Comme avec les Random Forest, nous avons réservé 20\% des données pour le jeu de validation et nous avons entrainé le modèle sur les 80\% restants.
+Vous pouvez retrouver en table \ref{neural_network_hyperparameters} les hyperparamètres utilisés pour l'entrainement du modèle.
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{|c|c|}
+            Hyperparamètre & Valeur              \\
+            \hline
+            Optimizer      & Nadam               \\
+            Loss           & Binary Crossentropy \\
+            Learning rate  & 0.001               \\
+            Epochs         & 300                 \\
+            Batch size     & 256                 \\
+        \end{tabular}
+    \end{center}
+    \caption{Hyperparamètres utilisés pour l'entrainement du réseau de neurones.}
+    \label{neural_network_hyperparameters}
+\end{table}
+Pour palier au problème de déséquilibre des classes, nous avons utilisé l'argument class\_weight de la fonction fit de Keras.
+Cet argument permet de donner un poids à chaque classe pour le calcul de la loss. Les poids des classes ont étés calculés avec la méthode compute\_class\_weight \cite{classweight}
+de la librairie scikit-learn. Les pondérations résultantes sont 0.5 pour la classe 0 et 17 pour la classe 1.
+
+Nous avons obtenu les résultats suivants en table \ref{neural_network_results} avec la matrice de confusion en figure \ref{neural_network_confusion_matrix} :
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{neural_network_confusion_matrix}Matrice de confusion du réseau de neurones.}
+        \begin{tabular}{r|cc}
+                    & Négatif & Positif \\ \hline
+            Négatif & 10053   & 2665    \\
+            Positif & 121     & 247     \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{neural_network_results}Métriques de performance du réseau de neurones.}
+        \begin{tabular}{r|ccc}
+            Classe  & Precision & Recall & F1Score \\ \hline
+            Négatif & 0.99      & 0.79   & 0.88    \\
+            Positif & 0.08      & 0.67   & 0.15    \\
+        \end{tabular}
+    \end{center}
+\end{table}
+Les résultats sont très similaires à ceux obtenus avec les Random Forest. Mais en étudiant le comportement du modèle sur les données de validation,
+nous avons remarqué un meilleur comportement. En figure \ref{miami_2023_sainz} vous pouvez voir la différence de comportement entre les deux modèles pour la course de Carlos Sainz sur le Grand Prix de Miami en 2023.
+\fig[H, width=0.9\textwidth]{
+    \label{miami_2023_sainz}Prédiction d'arrêt au stand pour la course de Carlos Sainz sur le Grand Prix de Miami en 2023.
+}{miami_2023_sainz.svg}
+Ici le modèle de Random Forest commence à prédire des arrêt au stand dès le 8ème tour, alors que le modèle de réseau de neurones ne commence à prédire des arrêts au stand qu'à partir du 14ème.
+Le modèle de réseau de neurones semble pouvoir augmenter sa probabilité d'arrêt au stand plus rapidement que le modèle de Random Forest ce qui est un comportement plus utile pour la stratégie de course.
+En étudiant les résultats de LIME sur le 8ème tour de la course en figure \ref{miami_2023_sainz_lime_rf} et \ref{miami_2023_sainz_lime_nn},
+on peut voir que le réseau de neurones accordre plus d'importance à l'age des pneus -0.3 contre -0.15 pour le modèle de Random Forest.
+\fig[H, width=0.9\textwidth]{
+    \label{miami_2023_sainz_lime_rf}Résultats de LIME pour le modèle de Random Forest sur le 8ème tour de la course de Carlos Sainz sur le Grand Prix de Miami en 2023.
+}{miami_2023_sainz_lime_rf.svg}
+\fig[H, width=0.9\textwidth]{
+    \label{miami_2023_sainz_lime_nn}Résultats de LIME pour le modèle de réseau de neurones sur le 8ème tour de la course de Carlos Sainz sur le Grand Prix de Miami en 2023.
+}{miami_2023_sainz_lime_nn.svg}
+Malgré les métriqes de performance similaires, le modèle de réseau de neurones semble avoir un meilleur comportement.
 
 \subsection{Séries temporelles}
-
 Les précédentes expériences utilisaient uniquement le dernier tour pour prédire la probabilité d'arrêt au stand.
 Cependant, il sera plus intéressant d'utiliser les données de plusieurs tours car cela permettra de mieux capturer les tendances.
 
@@ -231,3 +315,201 @@ Elles sont enregistrées de façon séquentielle et sont donc naturellement ordo
 
 Il faut cependant grouper les données par course et par voiture pour avoir des séquences de données cohérentes.
 On peut observer en figure \ref{time_series_example} la nature séquentielle des données pour un sous ensemble de features.
+\fig[H, width=0.9\textwidth]{
+    \label{time_series_example}Exemple de séries temporelles pour la course de Lewis Hamilton sur le Grand Prix d'Espagne en 2023.
+}{time_series_example.svg}
+
+L'étape de préparation des données est plus complexe que pour les modèles précédents.
+Il faut maintenant créer des séquences de données de taille fixe à partir des données de chaque course.
+Les données des course de chaque voiture doivent être dans le même set de données (entrainement ou validation).
+Le processus de séparation des données est le suivant :
+\begin{enumerate}
+    \item On regroupe les données avec les colonnes \textit{Year}, \textit{RoundNumber} et \textit{DriverNumber} comme clé.
+    \item On mélange ces clés puis on les sépare en 80\% pour l'entrainement, 20\% pour la validation.
+    \item On crée les 2 sets de données en utilisant les clés séparées.
+\end{enumerate}
+La séparation n'est plus exactement fidèle au pourcentage spécifié car on sépare les courses et non les tours.
+Mais avec notre grand nombre de données cela ne pose pas de problème.
+Ensuite, on crée les séquences de données de taille fixe à partir des données de chaque course.
+La cible de chaque séquence est la colonne "is\_pitting" du prochain tour,
+par exemple, la cibe d'une séquence comprenant les tours de 10 à 15 est la valeur de "is\_pitting" du tour 16.
+
+Pour cette modélisation nous avons utilisé un réseau de neurones récurrents (RNN) avec des cellules LSTM.
+Les réseau de neurones récurrents sont un type de réseau de neurones adapté aux séries temporelles.
+Les connexions entre les neurones forment des cycles \ref{rnn_example}, ce qui permet d'utiliser les sorties précédentes comme entrées.
+Cela permet aux informations passées d'avoir un impact sur les prédictions futures.
+\fig[H, width=0.9\textwidth]{
+    \label{rnn_example}Exemple de réseau de neurones récurrents.\cite{rnnExample}
+}{rnn_example.svg}
+Une des limitations des réseaux de neurones récurrents est le "vanishing gradient problem" où les gradients deviennent trop petits pour être utiles.
+Les LSTM (Long Short Term Memory) sont une variante des RNN qui permettent de résoudre ce problème.
+L'architecture utilisée est en table \ref{lstm_architecture}.
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{lstm_architecture}Architecture du réseau de neurones récurrents.}
+        \begin{tabular}{| l | l | l |}
+            Couche  & Nombre de neurones & Fonction d'activation \\ \hline
+            LSTM    & 64                 & Tanh                  \\
+            Dropout & 0.1                &                       \\
+            LSTM    & 64                 & Tanh                  \\
+            Dropout & 0.1                &                       \\
+            Dense   & 64                 & ReLu                  \\
+            Dropout & 0.1                &                       \\
+            Dense   & 64                 & ReLu                  \\
+            Dense   & 1                  & Sigmoid               \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+Vous pouvez retrouver en table \ref{rnn_hyperparameters} les hyperparamètres utilisés pour l'entrainement du modèle.
+Contrairement au réseaux de neurones classiques nous avons observés de meilleures résultats avec un learning rate plus faible et un batch size plus grand.
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{|c|c|}
+            Hyperparamètre & Valeur              \\
+            \hline
+            Optimizer      & Nadam               \\
+            Loss           & Binary Crossentropy \\
+            Learning rate  & 0.0005              \\
+            Epochs         & 100                 \\
+            Batch size     & 1024                \\
+        \end{tabular}
+    \end{center}
+    \caption{Hyperparamètres utilisés pour l'entrainement du réseau de neurones.}
+    \label{rnn_hyperparameters}
+\end{table}
+
+On peut voir en table \ref{rnn_matrix} et \ref{rnn_results} les résultats de ce modèle.
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rnn_matrix}Matrice de confusion du réseau de neurones récurrents.}
+        \begin{tabular}{r|cc}
+                    & Négatif & Positif \\ \hline
+            Négatif & 8914    & 2607    \\
+            Positif & 91      & 242     \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rnn_results}Métriques de performance du réseau de neurones récurrents.}
+        \begin{tabular}{r|ccc}
+            Classe  & Precision & Recall & F1Score \\ \hline
+            Négatif & 0.99      & 0.77   & 0.87    \\
+            Positif & 0.08      & 0.73   & 0.15    \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+On peut observer une très légère amélioration par rapport au modèle précédent. Cependant, le modèle est toujours très biaisé vers la classe négative.
+En figure \ref{comparison_rnn} on peut voir la comparaison des modèles sur les données du Grand Prix d'Espagne 2023 de Max Verstappen.
+\fig[H, width=0.9\textwidth]{
+    \label{comparison_rnn}Comparaison des modèles sur les données du Grand Prix d'Espagne 2023 de Max Verstappen.
+}{comparison_rnn.svg} %TODO fix the figure
+
+On peut observer que le modèle récurrent a un comportement similaire au modèle précédent mais avec des prédictions plus confiantes.
+Cependant, il semble sujet a des prédictions assez étrange comme en figure %\ref{rnn_prediction}.
+% Add weird prediction figure
+
+\section{Classification multi-classes pour le choix des pneus}
+Dans cette section nous allons nous intéresser à la classification multi-classes pour le choix des pneus.
+Elle serait utilisée en combinaison avec la classification binaire pour la prédiction des arrêts aux stands.
+Le but est que une fois une précition positive pour un arrêt aux stands, on puisse prédire le type de pneus qui sera utilisé.
+
+La préparation des données est similaires à la classification d'arrêt aux stands à la différence que la cible est la colonne "NextCompound".
+De plus on ne garde que les tours où un arrêt aux stands a eu lieu. On réduit grandement le nombre d'échantillons (environ de 69'400 à 1'900)
+mais le problème devient plus simple car les classes sont plus équilibrées, comme on peut le voir en figure \ref{Compound_distribution}.
+
+Comme avec la classification binaire, nous avons expérimenté avec des modèles Random Forest et des réseaux de neurones.
+Le modèle Random Forest a été entrainé avec les hyperparamètres en table \ref{rf_hyperparameters_compound}.
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rf_hyperparameters_compound}Paramètres du meilleur modèle Random Forest pour le choix des pneus.}
+        \begin{tabular}{r|l}
+            hyperparamètre & valeur             \\ \hline
+            class weight   & balanced subsample \\
+            n estimator    & 2000               \\
+            max depth      & 5                  \\
+            max features   & sqrt               \\
+        \end{tabular}
+    \end{center}
+\end{table}
+%TODO faire un grid search pour chercher un meilleur modèle
+
+On peut voir en table \ref{rf_compound_matrix} et \ref{rf_compound_results} les résultats de ce modèle.
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rf_compound_matrix}Matrice de confusion du meilleur modèle Random Forest pour le choix des pneus.
+            Les colonnes représentent les prédictions et les lignes les vraies valeurs.}
+        \begin{tabular}{r|ccc}
+                   & Soft & Medium & Hard \\ \hline
+            Soft   & 83   & 7      & 1    \\
+            Medium & 59   & 63     & 7    \\
+            Hard   & 68   & 27     & 69   \\
+        \end{tabular}
+    \end{center}
+\end{table}
+\begin{table}[H]
+    \begin{center}
+        \caption{\label{rf_compound_results}Métriques de performance du meilleur modèle Random Forest pour le choix des pneus.}
+        \begin{tabular}{r|ccc}
+            Classe & Precision & Recall & F1Score \\ \hline
+            Soft   & 0.71      & 0.70   & 0.70    \\
+            Medium & 0.65      & 0.49   & 0.56    \\
+            Hard   & 0.9       & 0.42   & 0.57    \\
+        \end{tabular}
+    \end{center}
+\end{table}
+Les résultats sont assez particulier, le modèle prédit souvent la classe Soft, on a beaucoup de faux positifs pour cette classe.
+La classe Hard est rarement prédite mais quand elle l'est, elle est souvent correcte.
+En figure \ref{rf_compound_prediction} on peut voir la comparaison des prédictions du modèle avec les vraies valeurs.
+\fig[H, width=0.9\textwidth]{
+    \label{rf_compound_prediction}Prédiction du modèle de Random Forest pour le choix des pneus du grand prix d'Espagne 2023 de Max Verstappen.
+}{rf_compound_prediction.svg}
+En début de course, le modèle prédit la classe Hard se qui fait sens car c'est le pneu le plus résistant sur lequel on serait le plus susceptible de faire un long relais jusqu'à la fin de la course.
+Puis en milieu de course le modèle choisit des pneus Medium avant de choisir des pneus Soft à la fin de la course.
+Cela semble être un comportement logique pour un pilote qui cherche à faire le moins d'arrêts aux stands possible.
+
+\section{Autre modélisation}
+Nous avons expérimentés les autres modélisation dans lesquelles les deux problèmes sont traités en même temps.
+En théorie cela permettrait d'avoir un modèle plus performant car les décisions sont liées.
+Deux pistes explorées sont celle d'une classification avec 4 classes ou les 2 colonnes "is\_pitting" et "NextCompound" sont combinées en une seule cible
+codifiée de la manière suivante :
+\begin{table}[H]
+    \begin{center}
+        \begin{tabular}{r|c}
+            Classe                             & Valeur       \\ \hline
+            Pas d'arrêt aux stands             & [1, 0, 0, 0] \\
+            Arrêt aux stands avec pneus Soft   & [0, 1, 0, 0] \\
+            Arrêt aux stands avec pneus Medium & [0, 0, 1, 0] \\
+            Arrêt aux stands avec pneus Hard   & [0, 0, 0, 1] \\
+        \end{tabular}
+    \end{center}
+\end{table}
+
+L'autre piste est celle d'un réseau de neurones avec 2 sorties, une pour chaque problème.
+L'une des sorties est une classification binaire pour la prédiction des arrêts aux stands soit un seul neurone avec une fonction d'activation sigmoïde.
+L'autre sortie est une classification multi-classes pour le choix des pneus soit 3 neurones avec une fonction d'activation softmax.
+Chacune des sorties possède sa propre fonction de perte. Une telle architecture est illustrée en figure \ref{two_output_nn}.
+\fig[H, width=0.9\textwidth]{
+    \label{two_output_nn}Architecture d'un réseau de neurones avec 2 sorties.
+}{two_output_nn.svg}
+
+Ces deux pistes n'ont pas donné de résultats concluants. Les modèles sont bien moins performants que ceux présentés dans les sections précédentes.
+Cela peut être dû au fait que la sur-représentation de la classe "Pas d'arrêt aux stands" rend difficile l'apprentissage des classes du choix des pneus.
+
+\section{Métrique de performance}
+Suite à l'analyse des résultats des différents modèles explorés dans ce chapitre, on a pu observer que
+les métriques qui considérait les prédictions comme des résultats booléens (True positif, False positif, ...) étaient assez peu représentatives de la performance des modèles.
+
+En effet, dans son utilisation finale, le modèle n'as pas besoin d'être restraint à une prise de décision binaire avec des seuils de probabilité.
+Il peut simplement donner une probabilité d'arrêt aux stands pour chaque tour de la course. C'est alors aux ingénieurs de l'équipe de décider
+si ce seuil est suffisamment élevé pour justifier un arrêt aux stands.
+
+Il fait donc plus sens d'utiliser des métriques qui considèrent les prédictions comme des probabilités et qui sont calculées sur l'ensemble des prédictions d'une course,
+le scénario d'utilisation du modèle final. L'objectif est de faire la différence entre un modèle ne prédirait pas du tout un arrêt aux stands et un modèle qui l'aurait prédit
+avec quelques tours de retard.
+
+La métrique proposée pondère les prédictions d'une course en fonction de leur impact. Les tours où la voiture rentre aux stands, les modèles sont récompensés
+proportionnellement à la probabilité d'arrêt prédite.
